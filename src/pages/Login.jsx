@@ -1,23 +1,23 @@
-import { LogIn } from "lucide-react";
 import PageTemplate from "../components/ui/PageTemplate";
 
-const Login = () => {
+function Login() {
   return (
     <PageTemplate
-      icon={<LogIn size={24} />}
-      title="Login"
-      description="Securely access your SparkSales business dashboard."
-      purpose="The Login page allows registered student entrepreneurs to access their SparkSales account."
+      title="Login 🔐"
+      description="Authenticate users before they access their SparkSales business environment."
+      purpose="The Login page will securely authenticate registered users and direct them to the appropriate part of the application."
       functionality={[
-        "Email and password authentication.",
-        "Remember me functionality.",
-        "Forgot password functionality.",
-        "Validation for incorrect credentials.",
-        "Secure authentication feedback.",
+        "Enter email address.",
+        "Enter password.",
+        "Validate login credentials.",
+        "Display authentication errors.",
+        "Remember authenticated sessions.",
         "Redirect authenticated users to the dashboard.",
+        "Provide a link to business registration.",
       ]}
+      status="Planning"
     />
   );
-};
+}
 
 export default Login;

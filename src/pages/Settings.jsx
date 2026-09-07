@@ -1,23 +1,23 @@
 import PageTemplate from "../components/ui/PageTemplate";
 
-function Expenses() {
+function Settings() {
   return (
     <PageTemplate
-      title="Expenses"
-      icon="💳"
-      description="Track and manage your business expenses."
+      title="Settings"
+      icon="⚙️"
+      description="Manage your business and application preferences."
     >
       <div className="rounded-xl border bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">
-          Expenses
+          Settings
         </h2>
 
         <p className="mt-2 text-slate-600">
-          Your recorded business expenses will appear here.
+          Your account and application settings will appear here.
         </p>
       </div>
     </PageTemplate>
   );
 }
 
-export default Expenses;
+export default Settings;
