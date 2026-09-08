@@ -1,46 +1,22 @@
 # SparkSales
 
-### Ignite Your Earnings
+SparkSales is a student Entrepreneurship Day financial dashboard for recording sales and expenses, calculating gross profit, SparkSales 5% commission, and net profit.
 
-SparkSales is a financial tracking platform designed for student entrepreneurs participating in the CTU National Entrepreneurship Day 2026.
+## Development
 
-The platform helps student businesses record their sales and expenses, calculate profit or loss, track commission, and understand their financial performance during the event.
+```bash
+npm install
+npm run dev
+```
 
-## 🎯 Purpose
+## CI
 
-SparkSales is designed to make financial tracking simple for student entrepreneurs who are operating temporary businesses during Entrepreneurship Day.
+GitHub Actions runs `npm ci`, ESLint, and the production build for pull requests into `develop`.
 
-Users can:
+## Team workflow
 
-- Record sales
-- Record business expenses
-- Track revenue
-- Calculate gross profit or loss
-- Calculate SparkSales commission
-- Calculate final profit or loss
-- View financial reports
-- Monitor business performance from a dashboard
+`feature/*` → Pull Request → `develop` → release PR → `main`
 
-## 🏫 Event
+## Notes
 
-**CTU National Entrepreneurship Day 2026**
-
-**Date:** 16 September 2026  
-**Trading Time:** 09:00–12:30
-
-## 💰 Financial Model
-
-SparkSales uses a commission-based model.
-
-The planned commission is:
-
-**5% of Gross Profit**
-
-Where:
-
-```text
-Gross Profit = Total Sales - Total Expenses
-
-SparkSales Commission = Gross Profit × 5%
-
-Final Profit = Gross Profit - SparkSales Commission
+The application currently uses browser localStorage for its development template data. Replace this with the production backend when authentication/database work is introduced.
