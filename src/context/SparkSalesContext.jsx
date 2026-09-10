@@ -143,26 +143,23 @@ const STORAGE_KEY = "sparksales-data-v2";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+const normalizeBusiness = (value) => {
+  if (!value || value.name === "SparkSales Business") return null;
+  return value;
+};
+
 const SparkSalesContext = createContext(null);
 
 export function SparkSalesProvider({ children }) {
   const [business, setBusiness] = useState(() => {
     try {
       return (
-        JSON.parse(
-          localStorage.getItem(`${STORAGE_KEY}-business`)
-        ) || {
-          name: "SparkSales Business",
-          category: "Student Business",
-          owner: "Business Owner",
-        }
+        normalizeBusiness(
+          JSON.parse(localStorage.getItem(`${STORAGE_KEY}-business`))
+        )
       );
     } catch {
-      return {
-        name: "SparkSales Business",
-        category: "Student Business",
-        owner: "Business Owner",
-      };
+      return null;
     }
   });
 

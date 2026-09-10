@@ -8,7 +8,7 @@ import {
   ShoppingCart,
   X,
 } from "lucide-react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 const links = [
   {
@@ -40,6 +40,8 @@ const links = [
 
 function AppLayout() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const isBusinessSetup = location.pathname === "/register-business";
 
   const navClass = ({ isActive }) =>
     `inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
@@ -68,8 +70,7 @@ function AppLayout() {
         Skip to content
       </a>
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#F7FAF9]/95 backdrop-blur">
+      {!isBusinessSetup && <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#F7FAF9]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           {/* Brand */}
           <Link
@@ -169,18 +170,18 @@ function AppLayout() {
             </nav>
           </div>
         )}
-      </header>
+      </header>}
 
       {/* Main content */}
       <main
         id="main"
-        className="mx-auto w-full max-w-6xl px-4 pb-12 pt-6 sm:px-6"
+        className={isBusinessSetup ? "w-full" : "mx-auto w-full max-w-6xl px-4 pb-12 pt-6 sm:px-6"}
       >
         <Outlet />
       </main>
 
       {/* Mobile quick navigation */}
-      <nav
+      {!isBusinessSetup && <nav
         className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur md:hidden"
         aria-label="Mobile quick navigation"
       >
@@ -208,10 +209,10 @@ function AppLayout() {
             )
           )}
         </div>
-      </nav>
+      </nav>}
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white/60 py-7 pb-24 md:pb-7">
+      {!isBusinessSetup && <footer className="border-t border-slate-200 bg-white/60 py-7 pb-24 md:pb-7">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <span>
             © {new Date().getFullYear()} SparkSales ·
@@ -241,7 +242,7 @@ function AppLayout() {
             </Link>
           </span>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

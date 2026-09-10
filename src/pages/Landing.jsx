@@ -30,7 +30,7 @@ const Landing = () => (
             Login
           </Link>
           <Link
-            to="/register-business"
+            to="/register"
             className="rounded-xl bg-[#063D35] px-4 py-2 text-sm font-bold text-white hover:bg-[#052f29]"
           >
             Get started
@@ -54,7 +54,7 @@ const Landing = () => (
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
-            to="/register-business"
+            to="/register"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#063D35] px-6 py-3 font-bold text-white shadow-sm hover:bg-[#052f29]"
           >
             Start tracking <ArrowRight size={18} />

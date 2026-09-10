@@ -1,13 +1,29 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const nav = useNavigate();
-  const submit = (e) => {
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (email && password) nav("/dashboard");
+    setError("");
+    setLoading(true);
+    try {
+      await login(email, password);
+      nav("/dashboard");
+    } catch (err) {
+      setError(err.message || "Incorrect email or password.");
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -28,8 +44,12 @@ function Login() {
             value={password}
             onChange={setPassword}
           />
-          <button className="w-full rounded-xl bg-[#063D35] py-3 text-sm font-bold text-white">
-            Sign in
+          {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+          <button
+            disabled={loading}
+            className="w-full rounded-xl bg-[#063D35] py-3 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
         <p className="mt-5 text-center text-sm text-slate-500">
