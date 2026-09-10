@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import {
   BarChart3,
@@ -124,33 +125,25 @@ function AppLayout() {
             to="/dashboard"
             onClick={closeMobileMenu}
             aria-label="SparkSales dashboard"
-            className="group flex min-w-0 items-center gap-3"
+            className="group flex min-w-0 items-center"
           >
             <motion.div
-              initial="rest"
-              animate="rest"
-              whileHover="hover"
-              variants={logoHover}
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
+              whileHover={{
+                scale: 1.02,
+                y: -1,
+              }}
+              whileTap={{
+                scale: 0.99,
+              }}
+              transition={spring}
+              className="flex items-center"
             >
               <img
                 src={sparkSalesLogo}
-                alt="SparkSales"
-                className="h-full w-full object-contain p-1.5"
+                alt="SparkSales — Ignite Your Earnings"
+                className="h-12 w-auto max-w-[210px] object-contain sm:h-13 sm:max-w-[230px]"
               />
-
-              <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20" />
             </motion.div>
-
-            <div className="min-w-0 leading-tight">
-              <div className="truncate text-[15px] font-extrabold tracking-tight text-[#063D35] sm:text-base">
-                SparkSales
-              </div>
-
-              <div className="hidden text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:block">
-                Ignite Your Earnings
-              </div>
-            </div>
           </Link>
 
           {/* Desktop navigation */}
