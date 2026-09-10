@@ -2,12 +2,14 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 
 import Landing from "./pages/Landing";
-import Login from "./pages/Login";
+import AuthPage from "./pages/AuthPage";
 import RegisterBusiness from "./pages/RegisterBusiness";
 
 import Dashboard from "./pages/Dashboard";
@@ -23,12 +25,16 @@ import NotFound from "./pages/NotFound";
 import {
   SparkSalesProvider,
 } from "./context/SparkSalesContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
+import { useSparkSales } from "./context/SparkSalesContext";
 
 function App() {
   return (
-    <SparkSalesProvider>
-      <BrowserRouter>
-        <Routes>
+    <AuthProvider>
+      <SparkSalesProvider>
+        <BrowserRouter>
+          <Routes>
           {/* Public pages */}
           <Route
             path="/"
@@ -37,34 +43,39 @@ function App() {
 
           <Route
             path="/login"
-            element={<Login />}
+            element={<AuthPage />}
+          />
+
+          <Route
+            path="/register"
+            element={<AuthPage />}
           />
 
           {/* Application pages */}
           <Route element={<AppLayout />}>
             <Route
               path="/dashboard"
-              element={<Dashboard />}
+              element={<BusinessRequired><Dashboard /></BusinessRequired>}
             />
 
             <Route
               path="/sales"
-              element={<Sales />}
+              element={<BusinessRequired><Sales /></BusinessRequired>}
             />
 
             <Route
               path="/expenses"
-              element={<Expenses />}
+              element={<BusinessRequired><Expenses /></BusinessRequired>}
             />
 
             <Route
               path="/reports"
-              element={<Reports />}
+              element={<BusinessRequired><Reports /></BusinessRequired>}
             />
 
             <Route
               path="/settings"
-              element={<Settings />}
+              element={<BusinessRequired><Settings /></BusinessRequired>}
             />
 
             <Route
@@ -89,10 +100,21 @@ function App() {
               element={<NotFound />}
             />
           </Route>
-        </Routes>
-      </BrowserRouter>
-    </SparkSalesProvider>
+          </Routes>
+        </BrowserRouter>
+      </SparkSalesProvider>
+    </AuthProvider>
   );
 }
 
 export default App;
+
+function BusinessRequired({ children }) {
+  const { token } = useAuth();
+  const { business } = useSparkSales();
+  const location = useLocation();
+
+  if (!token) return <Navigate to="/register" replace state={{ from: location }} />;
+  if (!business) return <Navigate to="/register-business" replace />;
+  return children;
+}

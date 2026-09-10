@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import sparkSalesLogo from "../../assets/sparksales-logo.png";
 
 const links = [
@@ -103,6 +103,8 @@ const logoHover = {
 
 function AppLayout() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const isBusinessSetup = location.pathname === "/register-business";
 
   const closeMobileMenu = () => {
     setOpen(false);
@@ -117,8 +119,7 @@ function AppLayout() {
         Skip to content
       </a>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-[#F7FAF9]/90 backdrop-blur-xl">
+  {!isBusinessSetup && <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-[#F7FAF9]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
           {/* Brand */}
           <Link
@@ -333,19 +334,19 @@ function AppLayout() {
             </motion.div>
           )}
         </AnimatePresence>
-      </header>
+      </header>}
 
       {/* Main content */}
       <main
         id="main"
-        className="mx-auto w-full max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8"
+        className={isBusinessSetup ? "w-full" : "mx-auto w-full max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8"}
       >
         <Outlet />
       </main>
 
-      {/* Mobile bottom navigation */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-1.5 shadow-[0_-8px_30px_rgba(6,61,53,0.06)] backdrop-blur-xl md:hidden"
+  {/* Mobile bottom navigation */}
+  {!isBusinessSetup && <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur md:hidden"
         aria-label="Mobile quick navigation"
       >
         <div className="mx-auto flex max-w-md">
@@ -392,10 +393,10 @@ function AppLayout() {
             </NavLink>
           ))}
         </div>
-      </nav>
+      </nav>}
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white/60 pb-24 pt-8 md:pb-8">
+      {!isBusinessSetup && <footer className="border-t border-slate-200 bg-white/60 pb-24 pt-8 md:pb-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <motion.span
             initial={{
@@ -436,7 +437,7 @@ function AppLayout() {
             </Link>
           </div>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

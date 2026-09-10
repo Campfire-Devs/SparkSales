@@ -55,7 +55,7 @@ const TermsConditions = () => {
 
       <TermsSection
         title="8. Disputes"
-        text="Users should raise disputes concerning calculations or account matters through the official SparkSales support channel."
+        text="Users should raise disputes concerning calculations or account matters through the official SparkSales support channel. "
       />
 
       <TermsSection
