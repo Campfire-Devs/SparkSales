@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+579e1fe635017a65bbf49d94e2d63007a1c6a32c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb50f3583b965a00b5db2dccd19f16cc456076cf")]
 [assembly: System.Reflection.AssemblyProductAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
