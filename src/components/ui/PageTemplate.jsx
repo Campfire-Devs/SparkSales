@@ -1,37 +1,4 @@
-function PageTemplate({ title, icon, description, children }) {
-  return (
-    <div className="min-h-screen bg-slate-50 px-6 py-8">
-      <div className="mx-auto max-w-7xl">
-
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">
-              {title}
-            </h1>
-
-            {icon && (
-              <span className="text-3xl">
-                {icon}
-              </span>
-            )}
-          </div>
-
-          {description && (
-            <p className="mt-2 max-w-3xl text-slate-600">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* Page Content */}
-        <main>
-          {children}
-        </main>
-
-      </div>
-    </div>
-  );
+function PageTemplate({ title, description, action, children }) {
+  return <div><div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-3xl font-extrabold tracking-tight text-[#063D35] sm:text-4xl">{title}</h1>{description && <p className="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base">{description}</p>}</div>{action}</div>{children}</div>;
 }
-
 export default PageTemplate;

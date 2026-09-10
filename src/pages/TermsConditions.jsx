@@ -1,21 +1,19 @@
 const TermsConditions = () => {
   return (
-    <div className="mx-auto max-w-4xl space-y-8 py-8">
+    <div className="mx-auto max-w-4xl space-y-5 py-2">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wider text-spark-secondary">
+        <p className="text-sm font-semibold uppercase tracking-wider text-[#4FAF9D]">
           SparkSales
         </p>
 
-        <h1 className="mt-2 text-4xl font-bold text-spark-primary">
+        <h1 className="mt-2 text-4xl font-bold text-[#063D35]">
           Terms & Conditions
         </h1>
 
-        <p className="mt-3 text-gray-500">
-          Last updated: September 2026
-        </p>
+        <p className="mt-3 text-gray-500">Last updated: September 2026</p>
       </div>
 
-      <div className="rounded-2xl border border-spark-secondary/30 bg-spark-tertiary/40 p-5 text-sm leading-6 text-spark-primary">
+      <div className="rounded-2xl border border-[#7FCFC0]/40 bg-[#E6F7F3] p-5 text-sm leading-6 text-[#063D35]">
         <strong>Important:</strong> This is a starting draft and should be
         reviewed before being published or relied upon commercially.
       </div>
@@ -81,13 +79,9 @@ const TermsConditions = () => {
 const TermsSection = ({ title, text }) => {
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold text-spark-primary">
-        {title}
-      </h2>
+      <h2 className="text-xl font-bold text-[#063D35]">{title}</h2>
 
-      <p className="mt-3 leading-7 text-gray-600">
-        {text}
-      </p>
+      <p className="mt-3 leading-7 text-gray-600">{text}</p>
     </section>
   );
 };
