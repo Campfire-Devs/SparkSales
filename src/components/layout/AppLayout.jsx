@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import sparkSalesLogo from "../../assets/sparksales-logo.png";
 
 const links = [
   {
@@ -130,22 +131,15 @@ function AppLayout() {
               animate="rest"
               whileHover="hover"
               variants={logoHover}
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#063D35] text-lg font-extrabold text-[#B8F2E6] shadow-sm"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
             >
-              <motion.span
-                animate={{
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{
-                  duration: 2.4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                S
-              </motion.span>
+              <img
+                src={sparkSalesLogo}
+                alt="SparkSales"
+                className="h-full w-full object-contain p-1.5"
+              />
 
-              <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10" />
+              <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20" />
             </motion.div>
 
             <div className="min-w-0 leading-tight">
@@ -164,68 +158,56 @@ function AppLayout() {
             className="hidden items-center rounded-2xl border border-slate-200/80 bg-white/70 p-1 shadow-sm md:flex"
             aria-label="Main navigation"
           >
-            {links.map(
-              ({
-                to,
-                label,
-                icon: Icon,
-              }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className="relative"
-                >
-                  {({ isActive }) => (
-                    <motion.div
-                      className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold ${
-                        isActive
-                          ? "text-white"
-                          : "text-slate-600 hover:text-[#063D35]"
-                      }`}
-                      whileHover={
-                        isActive
-                          ? undefined
-                          : {
-                              y: -1,
-                              scale: 1.01,
-                            }
-                      }
-                      whileTap={{
-                        scale: 0.98,
+            {links.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to} className="relative">
+                {({ isActive }) => (
+                  <motion.div
+                    className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold ${
+                      isActive
+                        ? "text-white"
+                        : "text-slate-600 hover:text-[#063D35]"
+                    }`}
+                    whileHover={
+                      isActive
+                        ? undefined
+                        : {
+                            y: -1,
+                            scale: 1.01,
+                          }
+                    }
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    transition={spring}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="desktop-nav-active"
+                        className="absolute inset-0 -z-10 rounded-xl bg-[#063D35] shadow-sm"
+                        transition={spring}
+                      />
+                    )}
+
+                    <motion.span
+                      animate={{
+                        scale: isActive ? 1 : 0.96,
                       }}
                       transition={spring}
                     >
-                      {isActive && (
-                        <motion.div
-                          layoutId="desktop-nav-active"
-                          className="absolute inset-0 -z-10 rounded-xl bg-[#063D35] shadow-sm"
-                          transition={spring}
-                        />
-                      )}
+                      <Icon size={15} />
+                    </motion.span>
 
-                      <motion.span
-                        animate={{
-                          scale: isActive ? 1 : 0.96,
-                        }}
-                        transition={spring}
-                      >
-                        <Icon size={15} />
-                      </motion.span>
-
-                      <span>{label}</span>
-                    </motion.div>
-                  )}
-                </NavLink>
-              )
-            )}
+                    <span>{label}</span>
+                  </motion.div>
+                )}
+              </NavLink>
+            ))}
           </nav>
 
           {/* Mobile menu button */}
           <motion.button
             type="button"
-            onClick={() =>
-              setOpen((value) => !value)
-            }
+            onClick={() => setOpen((value) => !value)}
             whileHover={{
               scale: 1.04,
             }}
@@ -234,18 +216,11 @@ function AppLayout() {
             }}
             transition={spring}
             className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-[#063D35] shadow-sm md:hidden"
-            aria-label={
-              open
-                ? "Close navigation"
-                : "Open navigation"
-            }
+            aria-label={open ? "Close navigation" : "Open navigation"}
             aria-expanded={open}
             aria-controls="mobile-navigation"
           >
-            <AnimatePresence
-              mode="wait"
-              initial={false}
-            >
+            <AnimatePresence mode="wait" initial={false}>
               {open ? (
                 <motion.span
                   key="close"
@@ -312,69 +287,55 @@ function AppLayout() {
                 className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6"
                 aria-label="Mobile navigation"
               >
-                {links.map(
-                  (
-                    {
-                      to,
-                      label,
-                      icon: Icon,
-                    },
-                    index
-                  ) => (
-                    <motion.div
-                      key={to}
-                      custom={index}
-                      variants={mobileItemVariants}
-                    >
-                      <NavLink
-                        to={to}
-                        onClick={closeMobileMenu}
-                      >
-                        {({ isActive }) => (
-                          <motion.div
-                            whileTap={{
-                              scale: 0.98,
-                            }}
-                            className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-4 py-3 text-sm font-semibold ${
-                              isActive
-                                ? "text-white"
-                                : "text-slate-600"
-                            }`}
-                          >
-                            {isActive && (
-                              <motion.div
-                                layoutId="mobile-nav-active"
-                                className="absolute inset-0 -z-10 rounded-xl bg-[#063D35]"
-                                transition={spring}
-                              />
-                            )}
+                {links.map(({ to, label, icon: Icon }, index) => (
+                  <motion.div
+                    key={to}
+                    custom={index}
+                    variants={mobileItemVariants}
+                  >
+                    <NavLink to={to} onClick={closeMobileMenu}>
+                      {({ isActive }) => (
+                        <motion.div
+                          whileTap={{
+                            scale: 0.98,
+                          }}
+                          className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-4 py-3 text-sm font-semibold ${
+                            isActive ? "text-white" : "text-slate-600"
+                          }`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="mobile-nav-active"
+                              className="absolute inset-0 -z-10 rounded-xl bg-[#063D35]"
+                              transition={spring}
+                            />
+                          )}
 
-                            <Icon size={17} />
-                            <span>{label}</span>
+                          <Icon size={17} />
+                          <span>{label}</span>
 
-                            {isActive && (
-                              <motion.span
-                                initial={{
-                                  opacity: 0,
-                                  x: -5,
-                                }}
-                                animate={{
-                                  opacity: 1,
-                                  x: 0,
-                                }}
-                                transition={{
-                                  delay: 0.08,
-                                  ...spring,
-                                }}
-                                className="ml-auto h-1.5 w-1.5 rounded-full bg-[#B8F2E6]"
-                              />
-                            )}
-                          </motion.div>
-                        )}
-                      </NavLink>
-                    </motion.div>
-                  )
-                )}
+                          {isActive && (
+                            <motion.span
+                              initial={{
+                                opacity: 0,
+                                x: -5,
+                              }}
+                              animate={{
+                                opacity: 1,
+                                x: 0,
+                              }}
+                              transition={{
+                                delay: 0.08,
+                                ...spring,
+                              }}
+                              className="ml-auto h-1.5 w-1.5 rounded-full bg-[#B8F2E6]"
+                            />
+                          )}
+                        </motion.div>
+                      )}
+                    </NavLink>
+                  </motion.div>
+                ))}
               </nav>
             </motion.div>
           )}
@@ -395,60 +356,48 @@ function AppLayout() {
         aria-label="Mobile quick navigation"
       >
         <div className="mx-auto flex max-w-md">
-          {links.slice(0, 4).map(
-            ({
-              to,
-              label,
-              icon: Icon,
-            }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className="flex flex-1"
-              >
-                {({ isActive }) => (
-                  <motion.div
-                    whileTap={{
-                      scale: 0.94,
-                    }}
-                    className={`relative flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition ${
-                      isActive
-                        ? "text-[#063D35]"
-                        : "text-slate-400"
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="bottom-nav-active"
-                        className="absolute inset-1 -z-10 rounded-xl bg-[#E6F7F3]"
-                        transition={spring}
-                      />
-                    )}
-
+          {links.slice(0, 4).map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className="flex flex-1">
+              {({ isActive }) => (
+                <motion.div
+                  whileTap={{
+                    scale: 0.94,
+                  }}
+                  className={`relative flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition ${
+                    isActive ? "text-[#063D35]" : "text-slate-400"
+                  }`}
+                >
+                  {isActive && (
                     <motion.div
-                      animate={{
-                        y: isActive ? -1 : 0,
-                        scale: isActive ? 1.05 : 1,
-                      }}
+                      layoutId="bottom-nav-active"
+                      className="absolute inset-1 -z-10 rounded-xl bg-[#E6F7F3]"
                       transition={spring}
-                    >
-                      <Icon size={17} />
-                    </motion.div>
+                    />
+                  )}
 
-                    <span>{label}</span>
-
-                    {isActive && (
-                      <motion.span
-                        layoutId="bottom-nav-dot"
-                        className="absolute bottom-1 h-1 w-1 rounded-full bg-[#063D35]"
-                        transition={spring}
-                      />
-                    )}
+                  <motion.div
+                    animate={{
+                      y: isActive ? -1 : 0,
+                      scale: isActive ? 1.05 : 1,
+                    }}
+                    transition={spring}
+                  >
+                    <Icon size={17} />
                   </motion.div>
-                )}
-              </NavLink>
-            )
-          )}
+
+                  <span>{label}</span>
+
+                  {isActive && (
+                    <motion.span
+                      layoutId="bottom-nav-dot"
+                      className="absolute bottom-1 h-1 w-1 rounded-full bg-[#063D35]"
+                      transition={spring}
+                    />
+                  )}
+                </motion.div>
+              )}
+            </NavLink>
+          ))}
         </div>
       </nav>
 
@@ -471,8 +420,7 @@ function AppLayout() {
               duration: 0.35,
             }}
           >
-            © {new Date().getFullYear()} SparkSales ·
-            Ignite Your Earnings
+            © {new Date().getFullYear()} SparkSales · Ignite Your Earnings
           </motion.span>
 
           <div className="flex flex-wrap gap-4">
@@ -490,10 +438,7 @@ function AppLayout() {
               Terms
             </Link>
 
-            <Link
-              to="/settings"
-              className="transition hover:text-[#063D35]"
-            >
+            <Link to="/settings" className="transition hover:text-[#063D35]">
               Settings
             </Link>
           </div>
