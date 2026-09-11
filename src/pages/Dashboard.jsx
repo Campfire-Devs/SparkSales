@@ -1,11 +1,9 @@
-/* eslint-disable no-unused-vars */
 import { useMemo, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
   Award,
   BarChart3,
-  Banknote,
   CheckCircle2,
   CircleDollarSign,
   Coins,
@@ -41,7 +39,6 @@ import {
   YAxis,
 } from "recharts";
 
-import PageTemplate from "../components/ui/PageTemplate";
 import { useSparkSales } from "../context/SparkSalesContext";
 import {
   formatCurrency,
