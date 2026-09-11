@@ -3,17 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useSparkSales } from "../context/SparkSalesContext";
 import { useAuth } from "../context/AuthContext";
 import { BrandLockup } from "../components/Brand";
+import { BUSINESS_CATEGORIES } from "../utils/sparkSales";
 
 function RegisterBusiness() {
   const { setBusiness } = useSparkSales();
-  const { token } = useAuth();
+  const { token, account } = useAuth();
   const nav = useNavigate();
   const [f, setF] = useState({
     name: "",
-    category: "",
+    category: BUSINESS_CATEGORIES[0],
     owner: "",
     contact: "",
     location: "",
+    stallNumber: "",
+    startingCapital: "",
     accepted: false,
   });
 
@@ -24,7 +27,12 @@ function RegisterBusiness() {
   const submit = (e) => {
     e.preventDefault();
     if (!token || !f.accepted) return;
-    setBusiness(f);
+    setBusiness({
+      ...f,
+      owner: f.owner || account?.fullName || "Business Owner",
+      startingCapital: Number(f.startingCapital) || 0,
+      commissionRate: 0.05,
+    });
     nav("/dashboard");
   };
 
@@ -50,11 +58,18 @@ function RegisterBusiness() {
             value={f.name}
             set={(v) => setF({ ...f, name: v })}
           />
-          <Field
-            label="Category"
-            value={f.category}
-            set={(v) => setF({ ...f, category: v })}
-          />
+          <label className="ss-field">
+            Category
+            <select
+              required
+              value={f.category}
+              onChange={(e) => setF({ ...f, category: e.target.value })}
+            >
+              {BUSINESS_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </label>
           </div>
           <div className="ss-field-row">
           <Field
@@ -68,11 +83,30 @@ function RegisterBusiness() {
             set={(v) => setF({ ...f, contact: v })}
           />
           </div>
+          <div className="ss-field-row">
           <Field
             label="Location"
             value={f.location}
             set={(v) => setF({ ...f, location: v })}
           />
+          <Field
+            label="Stall number"
+            value={f.stallNumber}
+            set={(v) => setF({ ...f, stallNumber: v })}
+          />
+          </div>
+          <label className="ss-field">
+            Starting capital (R)
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={f.startingCapital}
+              onChange={(e) => setF({ ...f, startingCapital: e.target.value })}
+              placeholder="e.g. 500"
+            />
+          </label>
         <label className="ss-setup-terms">
           <input
             type="checkbox"
@@ -116,3 +150,4 @@ function Field({ label, value, set }) {
   );
 }
 export default RegisterBusiness;
+

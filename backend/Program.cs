@@ -21,6 +21,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 
 var accounts = new ConcurrentDictionary<string, DemoAccount>(StringComparer.OrdinalIgnoreCase);
+var deletionRequests = new ConcurrentDictionary<string, DeletionRequestRecord>(StringComparer.OrdinalIgnoreCase);
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
@@ -34,9 +35,7 @@ app.MapPost("/api/auth/register", async (RegisterRequest request, WelcomeEmailSe
 
     var email = request.Email.Trim().ToLowerInvariant();
     if (!IsValidEmail(email))
-    {
         return Results.BadRequest("Please enter a valid email address.");
-    }
 
     var account = new DemoAccount(
         Guid.NewGuid().ToString("N"),
@@ -103,6 +102,40 @@ app.MapGet("/api/auth/callback", (string? error, string? code, string? state) =>
     return Results.StatusCode(StatusCodes.Status501NotImplemented);
 });
 
+// ---- Deletion requests (in-memory, keyed by email) ----
+
+app.MapGet("/api/deletion-request", (string email) =>
+{
+    if (string.IsNullOrWhiteSpace(email)) return Results.BadRequest("Email query parameter is required.");
+    deletionRequests.TryGetValue(email.Trim().ToLowerInvariant(), out var pending);
+    return Results.Ok(pending);
+});
+
+app.MapPost("/api/deletion-request", async (DeletionRequestBody request, WelcomeEmailService emailService) =>
+{
+    var email = request.Email?.Trim().ToLowerInvariant() ?? "";
+    if (!IsValidEmail(email))
+        return Results.BadRequest("A valid email is required.");
+    if (string.IsNullOrWhiteSpace(request.BusinessName))
+        return Results.BadRequest("Business name is required.");
+
+    var record = new DeletionRequestRecord(
+        Guid.NewGuid().ToString("N"), email, request.BusinessName, request.Reason,
+        DateTime.UtcNow, "pending");
+    deletionRequests[email] = record;
+
+    await emailService.SendDeletionRequestAsync(email, request.BusinessName, request.Reason);
+    return Results.Ok(record);
+});
+
+app.MapPost("/api/deletion-request/{id}/cancel", (string id) =>
+{
+    var match = deletionRequests.Values.FirstOrDefault(r => r.Id == id);
+    if (match is null) return Results.NotFound();
+    deletionRequests.TryRemove(match.Email, out _);
+    return Results.NoContent();
+});
+
 static string CreateToken() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
 static bool IsValidEmail(string email) =>
@@ -118,14 +151,12 @@ static class OAuthProvider
 }
 
 sealed record RegisterRequest(string FullName, string Email, string Password);
-
 sealed record LoginRequest(string Email, string Password);
-
 sealed record DemoAccount(string AccountId, string FullName, string Email, string Password);
-
 sealed record PublicAccount(string AccountId, string FullName, string Email);
-
 sealed record AuthResponse(string Token, PublicAccount Account);
+sealed record DeletionRequestBody(string Email, string BusinessName, string? Reason);
+sealed record DeletionRequestRecord(string Id, string Email, string BusinessName, string? Reason, DateTime RequestedAt, string Status);
 
 static class DemoAccountExtensions
 {

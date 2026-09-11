@@ -5,6 +5,10 @@ C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\SparkSalesApi.deps.j
 C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\SparkSalesApi.runtimeconfig.json
 C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\SparkSalesApi.dll
 C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\SparkSalesApi.pdb
+C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\BouncyCastle.Cryptography.dll
+C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\MailKit.dll
+C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\MimeKit.dll
+C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.csproj.AssemblyReference.cache
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\rpswa.dswa.cache.json
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.AssemblyInfoInputs.cache
@@ -21,13 +25,9 @@ C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\staticwebassets.buil
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\staticwebassets.development.json
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\staticwebassets.build.endpoints.json
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\swae.build.ex.cache
+C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSal.1A1B27A3.Up2Date
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.dll
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\refint\SparkSalesApi.dll
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.pdb
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.genruntimeconfig.cache
 C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\ref\SparkSalesApi.dll
-C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\BouncyCastle.Cryptography.dll
-C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\MailKit.dll
-C:\Users\juliu\Desktop\SparkSales\backend\bin\Debug\net10.0\MimeKit.dll
-C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSalesApi.csproj.AssemblyReference.cache
-C:\Users\juliu\Desktop\SparkSales\backend\obj\Debug\net10.0\SparkSal.1A1B27A3.Up2Date

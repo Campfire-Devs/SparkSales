@@ -11,7 +11,13 @@ import { api, setAuthToken } from "../lib/apiClient";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [account, setAccount] = useState(null);
+  const [account, setAccount] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("ss_account")) || null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState(() => localStorage.getItem("ss_token"));
   const [loading] = useState(false);
 
@@ -20,6 +26,11 @@ export function AuthProvider({ children }) {
     if (token) localStorage.setItem("ss_token", token);
     else localStorage.removeItem("ss_token");
   }, [token]);
+
+  useEffect(() => {
+    if (account) localStorage.setItem("ss_account", JSON.stringify(account));
+    else localStorage.removeItem("ss_account");
+  }, [account]);
 
   const register = useCallback(async (fullName, email, password) => {
     const res = await api.register({ fullName, email, password });

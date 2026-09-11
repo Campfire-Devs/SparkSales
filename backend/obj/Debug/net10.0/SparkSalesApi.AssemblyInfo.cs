@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("2ba20531-da2b-4ccd-b9f3-5197c960a14d")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb50f3583b965a00b5db2dccd19f16cc456076cf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db242fe38a39c021a147c9548145c3f14206f7b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SparkSalesApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

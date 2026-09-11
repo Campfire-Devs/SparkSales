@@ -114,7 +114,7 @@ function BusinessRequired({ children }) {
   const { business } = useSparkSales();
   const location = useLocation();
 
-  if (!token) return <Navigate to="/register" replace state={{ from: location }} />;
+  if (!token) return <Navigate to="/login" replace state={{ from: location }} />;
   if (!business) return <Navigate to="/register-business" replace />;
   return children;
 }
