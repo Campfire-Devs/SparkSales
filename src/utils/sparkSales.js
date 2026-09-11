@@ -1,5 +1,15 @@
 export const COMMISSION_RATE = 0.05;
 
+export const BUSINESS_CATEGORIES = [
+  "Baked Goods",
+  "Food & Drink",
+  "Crafts & Design",
+  "Fashion & Accessories",
+  "Tech & Gadgets",
+  "Services",
+  "Other",
+];
+
 export const SALE_CATEGORIES = [
   "Snacks",
   "Drinks",

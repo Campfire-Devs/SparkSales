@@ -27,6 +27,6 @@ dist-ssr
 backend/appsettings.Development.json
 backend/.env
 
-# .NET generated files
+# .NET build artifacts
 backend/bin/
 backend/obj/

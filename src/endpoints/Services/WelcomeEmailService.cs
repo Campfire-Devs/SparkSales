@@ -3,18 +3,16 @@ using MailKit.Security;
 using MimeKit;
 using System.Net;
 
-namespace SparkSalesApi.Services;
-
-public class EmailService
+public class WelcomeEmailService
 {
     private readonly string _smtpHost;
     private readonly int _smtpPort;
     private readonly string _senderEmail;
     private readonly string _senderName;
     private readonly string _appPassword;
-    private readonly ILogger<EmailService> _logger;
+    private readonly ILogger<WelcomeEmailService> _logger;
 
-    public EmailService(IConfiguration config, ILogger<EmailService> logger)
+    public WelcomeEmailService(IConfiguration config, ILogger<WelcomeEmailService> logger)
     {
         _smtpHost = config["Email:SmtpHost"]!;
         _smtpPort = int.Parse(config["Email:SmtpPort"] ?? "587");
@@ -24,7 +22,7 @@ public class EmailService
         _logger = logger;
     }
 
-    public async Task SendWelcomeEmailAsync(string toEmail, string fullName, string businessNameHint = "")
+    public Task SendAsync(string toEmail, string fullName)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_senderName, _senderEmail));
@@ -49,6 +47,39 @@ public class EmailService
                 </div>"
         };
 
+        return SendAsync(message, toEmail);
+    }
+
+    public Task SendDeletionRequestAsync(string toEmail, string businessName, string? reason)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_senderName, _senderEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
+        message.Subject = $"We received your removal request — {businessName}";
+
+        message.Body = new TextPart("html")
+        {
+            Text = $@"
+                <div style=""font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #063D35;"">
+                    <h1 style=""font-size: 22px;"">Removal request received</h1>
+                    <p style=""font-size: 15px; line-height: 1.6;"">
+                        We've received your request to permanently delete <strong>{WebUtility.HtmlEncode(businessName)}</strong>
+                        from SparkSales{(string.IsNullOrWhiteSpace(reason) ? "" : $" ({WebUtility.HtmlEncode(reason)})")}.
+                    </p>
+                    <p style=""font-size: 15px; line-height: 1.6;"">
+                        Our team will process this and send a final confirmation once it's done.
+                    </p>
+                    <p style=""font-size: 13px; color: #5C7A74; margin-top: 32px;"">
+                        — The SparkSales Team
+                    </p>
+                </div>"
+        };
+
+        return SendAsync(message, toEmail);
+    }
+
+    private async Task SendAsync(MimeMessage message, string toEmail)
+    {
         try
         {
             using var client = new SmtpClient();
@@ -59,9 +90,7 @@ public class EmailService
         }
         catch (Exception ex)
         {
-            // A failed welcome email should never block registration —
-            // log it and move on, rather than throwing.
-            _logger.LogWarning(ex, "Failed to send welcome email to {Email}", toEmail);
+            _logger.LogWarning(ex, "Failed to send email to {Email}", toEmail);
         }
     }
 }
