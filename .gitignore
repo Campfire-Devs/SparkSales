@@ -26,3 +26,7 @@ dist-ssr
 # Local backend OAuth configuration
 backend/appsettings.Development.json
 backend/.env
+
+# .NET generated files
+backend/bin/
+backend/obj/
