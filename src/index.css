@@ -83,20 +83,52 @@ select:focus:not(:focus-visible) {
 }
 
 /* Reports / print output */
+/* ==========================================
+   REPORT PRINTING
+   ========================================== */
+
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: white !important;
+  }
+
   header,
   footer,
   nav,
+  aside,
+  .report-controls,
   button {
     display: none !important;
   }
 
   main {
     max-width: none !important;
+    width: 100% !important;
     padding: 0 !important;
+    margin: 0 !important;
   }
 
-  body {
-    background: white;
+  .report-content {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .report-content section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-content table {
+    width: 100%;
+  }
+
+  .report-content canvas,
+  .report-content svg {
+    max-width: 100% !important;
   }
 }
