@@ -7,8 +7,16 @@ function Sales() {
   const [seller, setSeller] = useState("");
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState(""); 
-  const [search, setSearch] = useState("");
+  const [category, setCategory] =
+  useState("");
+
+const [paymentMethod, setPaymentMethod] =
+  useState("Cash");
+
+const [search, setSearch] =
+  useState("");
+
+
   const [editingIndex, setEditingIndex] = useState(null);
   const [deleteIndex, setDeleteIndex] = useState(null); 
   const [showForm, setShowForm] = useState(false);
@@ -19,6 +27,7 @@ function Sales() {
   const [editQuantity, setEditQuantity] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editCategory, setEditCategory] = useState("Snacks");
+  const [editPaymentMethod, setEditPaymentMethod] = useState("Cash");
 
   useEffect(() => {
     localStorage.setItem("sales", JSON.stringify(sales));
@@ -36,15 +45,17 @@ function Sales() {
       price: Number(price),
       total,
       category,
+      paymentMethod,
       date: new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
     };
     setSales([...sales, newSale]);
-    setProduct("");
-    setSeller("");
-    setQuantity("");
-    setPrice("");
-    setCategory(""); 
-    setShowForm(false);
+   setProduct("");
+setSeller("");
+setQuantity("");
+setPrice("");
+setCategory("");
+setPaymentMethod("Cash");
+setShowForm(false);
   };
 
   const handleDeleteClick = (index) => setDeleteIndex(index);
@@ -68,6 +79,9 @@ function Sales() {
       setEditQuantity(sale.quantity);
       setEditPrice(sale.price);
       setEditCategory(sale.category);
+      setEditPaymentMethod(
+  sale.paymentMethod || "Cash"
+);
     }
   };
 
@@ -81,6 +95,7 @@ function Sales() {
       price: Number(editPrice),
       total: Number(editQuantity) * Number(editPrice),
       category: editCategory,
+      paymentMethod: editPaymentMethod,
     };
     const updatedSales = [...sales];
     updatedSales[editingIndex] = updatedSale;
@@ -193,6 +208,31 @@ function Sales() {
                   <option value="Services">Services</option>
                 </select>
 
+<select
+  value={paymentMethod}
+  onChange={(e) =>
+    setPaymentMethod(e.target.value)
+  }
+  className={selectClass}
+  required
+>
+  <option value="Cash">
+    Cash
+  </option>
+
+  <option value="Card">
+    Card
+  </option>
+
+  <option value="EFT">
+    EFT
+  </option>
+
+  <option value="Other">
+    Other
+  </option>
+</select>
+
                 <button type="submit" className={`sm:col-span-2 ${btnPrimary}`}>
                   Save Sale
                 </button>
@@ -216,6 +256,9 @@ function Sales() {
                     </div>
                     <p className="text-sm text-slate-500 mt-1">{sale.seller} · {sale.date}</p>
                     <p className="text-sm text-slate-500">{sale.quantity} × R{sale.price.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-emerald-700">
+  Payment: {sale.paymentMethod || "Cash"}
+</p>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
                     <span className="font-semibold text-slate-900 text-lg">R {sale.total.toFixed(2)}</span>
@@ -254,6 +297,17 @@ function Sales() {
                 <option value="Crafts">Crafts</option>
                 <option value="Merch">Merch</option>
                 <option value="Services">Services</option>
+              </select>
+
+              <select
+                value={editPaymentMethod}
+                onChange={(e) => setEditPaymentMethod(e.target.value)}
+                className={selectClass}
+              >
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="EFT">EFT</option>
+                <option value="Other">Other</option>
               </select>
               
               <div className="flex gap-3 mt-2">
