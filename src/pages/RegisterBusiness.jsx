@@ -1,38 +1,64 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSparkSales } from "../context/SparkSalesContext";
 import { useAuth } from "../context/AuthContext";
 import { BrandLockup } from "../components/Brand";
-import { BUSINESS_CATEGORIES } from "../utils/sparkSales";
+import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber } from "../utils/sparkSales";
+
+const DRAFT_KEY = "sparksales-register-business-draft";
+
+const emptyDraft = {
+  name: "",
+  category: BUSINESS_CATEGORIES[0],
+  owner: "",
+  contact: "",
+  location: "",
+  stallNumber: "",
+  startingCapital: "",
+  accepted: false,
+};
+
+function loadDraft() {
+  try {
+    return { ...emptyDraft, ...JSON.parse(sessionStorage.getItem(DRAFT_KEY)) };
+  } catch {
+    return emptyDraft;
+  }
+}
 
 function RegisterBusiness() {
   const { setBusiness } = useSparkSales();
   const { token, account } = useAuth();
   const nav = useNavigate();
-  const [f, setF] = useState({
-    name: "",
-    category: BUSINESS_CATEGORIES[0],
-    owner: "",
-    contact: "",
-    location: "",
-    stallNumber: "",
-    startingCapital: "",
-    accepted: false,
-  });
+  // Loaded from sessionStorage so navigating away to read the Terms &
+  // Conditions or Privacy Policy and coming back doesn't wipe out
+  // whatever you'd already typed.
+  const [f, setF] = useState(loadDraft);
+  const [contactError, setContactError] = useState("");
 
   useEffect(() => {
     if (!token) nav("/register", { replace: true });
   }, [nav, token]);
 
+  useEffect(() => {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(f));
+  }, [f]);
+
   const submit = (e) => {
     e.preventDefault();
     if (!token || !f.accepted) return;
+    if (!isValidSAPhoneNumber(f.contact)) {
+      setContactError("Enter a valid South African number — 10 digits, starting with 0 (e.g. 0821234567).");
+      return;
+    }
+    setContactError("");
     setBusiness({
       ...f,
       owner: f.owner || account?.fullName || "Business Owner",
       startingCapital: Number(f.startingCapital) || 0,
       commissionRate: 0.05,
     });
+    sessionStorage.removeItem(DRAFT_KEY);
     nav("/dashboard");
   };
 
@@ -77,11 +103,17 @@ function RegisterBusiness() {
             value={f.owner}
             set={(v) => setF({ ...f, owner: v })}
           />
-          <Field
-            label="Contact"
-            value={f.contact}
-            set={(v) => setF({ ...f, contact: v })}
-          />
+          <label className="ss-field">
+            Contact
+            <input
+              required
+              value={f.contact}
+              onChange={(e) => setF({ ...f, contact: sanitizeSAPhoneInput(e.target.value) })}
+              placeholder="0821234567"
+              inputMode="numeric"
+            />
+            {contactError && <p className="ss-form-error">{contactError}</p>}
+          </label>
           </div>
           <div className="ss-field-row">
           <Field
@@ -115,16 +147,16 @@ function RegisterBusiness() {
             required
           />
           I agree to the{" "}
-          <a
-            href="/terms-and-conditions"
+          <Link
+            to="/terms-and-conditions"
             className="ss-setup-link"
           >
             Terms & Conditions
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="/privacy-policy" className="ss-setup-link">
+          <Link to="/privacy-policy" className="ss-setup-link">
             Privacy Policy
-          </a>
+          </Link>
           .
         </label>
         <button type="submit" className="ss-btn ss-btn-primary ss-btn-block">

@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const PrivacyPolicy = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="mx-auto max-w-3xl space-y-10 py-8">
       {/* Header */}
@@ -16,13 +18,15 @@ const PrivacyPolicy = () => {
           <p className="mt-3 text-gray-500">Last updated: September 2026</p>
         </div>
 
-        {/* Return Button */}
-        <Link
-          to="/dashboard"
+        {/* Return to wherever the person came from — not always "Dashboard",
+            since they may not have a business set up yet at this point. */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
           className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
         >
-          ← Dashboard
-        </Link>
+          ← Back
+        </button>
       </div>
 
       {/* Policy Sections */}
@@ -51,7 +55,7 @@ const PrivacyPolicy = () => {
 
         <PolicySection
           title="5. Sharing of Information"
-          text="We do not sell your personal or business financial data to third parties. We may share data with: (a) cloud hosting and service providers, to store and operate the Platform; and (b) regulators or law enforcement, where required by law. Any third party we share data with is required to protect it to a standard consistent with this Policy and under written confidentiality agreements."
+          text="We do not sell your personal or business financial data to third parties. We may share data with: (a) cloud hosting, email delivery, and other service providers, to store, operate and communicate through the Platform — for example, sending you account-related emails such as password resets or daily summaries; and (b) regulators or law enforcement, where required by law. Any third party we share data with is required to protect it to a standard consistent with this Policy and under written confidentiality agreements."
         />
 
         <PolicySection
@@ -85,9 +89,9 @@ const PrivacyPolicy = () => {
         />
 
         <PolicySection
-          title="12. Contact Us"
-          text="For privacy-related questions or requests, contact the SparkSales team."
-        />
+           title="12. Contact Us"
+          text="For privacy-related questions or requests, contact the SparkSales team at sparksales.team01@gmail.com."
+         />
       </div>
     </div>
   );

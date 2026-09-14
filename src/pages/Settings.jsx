@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { api } from "../lib/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
-import { BUSINESS_CATEGORIES } from "../utils/sparkSales";
+import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber } from "../utils/sparkSales";
 
 const MIN_COMMISSION_PERCENT = 5;
 const SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
@@ -90,10 +90,17 @@ function BusinessSection({ business, onSave }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(business);
   const [saving, setSaving] = useState(false);
+  const [contactError, setContactError] = useState("");
   const initials = business.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   async function save(e) {
     e.preventDefault();
+    const contact = form.contact || "";
+    if (contact && !isValidSAPhoneNumber(contact)) {
+      setContactError("Enter a valid South African number — 10 digits, starting with 0 (e.g. 0821234567).");
+      return;
+    }
+    setContactError("");
     setSaving(true);
     try {
       const updated = {
@@ -120,7 +127,7 @@ function BusinessSection({ business, onSave }) {
               <span className="ss-pill ss-pill-neutral">Stall {business.stallNumber}</span>
             </div>
           </div>
-          {!editing && <button className="ss-btn ss-btn-outline ss-btn-sm" onClick={() => { setForm(business); setEditing(true); }}>Edit</button>}
+          {!editing && <button className="ss-btn ss-btn-outline ss-btn-sm" onClick={() => { setForm(business); setContactError(""); setEditing(true); }}>Edit</button>}
         </div>
       </section>
 
@@ -146,7 +153,13 @@ function BusinessSection({ business, onSave }) {
                 <input value={form.owner || ""} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} />
               </label>
               <label className="ss-field"><span>Contact</span>
-                <input value={form.contact || ""} onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))} />
+                <input
+                  value={form.contact || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, contact: sanitizeSAPhoneInput(e.target.value) }))}
+                  placeholder="0821234567"
+                  inputMode="numeric"
+                />
+                {contactError && <p className="ss-form-error">{contactError}</p>}
               </label>
             </div>
             <div className="ss-field-row">
