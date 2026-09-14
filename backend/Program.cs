@@ -3,8 +3,17 @@ using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using SparkSalesApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' was not found.");
+
+builder.Services.AddDbContext<SparkSalesDbContext>(options =>
+    options.UseNpgsql(connectionString));
 builder.Services.AddSingleton<WelcomeEmailService>();
 
 builder.Services.AddCors(options =>

@@ -2,6 +2,10 @@ namespace SparkSalesApi.Models;
 
 public class DeletionRequest
 {
+    public DeletionRequest()
+    {
+    }
+
     public Guid DeletionRequestId { get; set; }
 
     public Guid BusinessId { get; set; }
