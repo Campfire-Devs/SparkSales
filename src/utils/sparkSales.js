@@ -46,3 +46,28 @@ export const formatDate = (iso) =>
       year: "numeric",
     }
   );
+
+// Every account gets its own slice of localStorage, keyed by email — shared
+// between Settings.jsx (which owns the "app"/"team" settings UI) and
+// anything else that needs to read the same per-account settings, like the
+// daily-summary/loss-alert notification check.
+export const APP_SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
+
+export function accountNamespace(account) {
+  return (account?.email || "guest").trim().toLowerCase();
+}
+
+export function readAccountSetting(account, key, fallback) {
+  try {
+    const namespace = accountNamespace(account);
+    const raw = localStorage.getItem(`${APP_SETTINGS_STORAGE_KEY}-${namespace}-${key}`);
+    return raw === null ? fallback : JSON.parse(raw) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function writeAccountSetting(account, key, value) {
+  const namespace = accountNamespace(account);
+  localStorage.setItem(`${APP_SETTINGS_STORAGE_KEY}-${namespace}-${key}`, JSON.stringify(value));
+}

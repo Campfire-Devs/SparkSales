@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { BrandLockup, LogoMark } from "../components/Brand";
-import { SocialCircleButton } from "../components/SocialButtons";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -38,11 +37,8 @@ export default function AuthPage() {
         <div className="ss-authcard-form">
           {isLogin ? <LoginForm /> : <RegisterForm onDone={() => navigate("/register-business")} />}
 
-          <div className="ss-divider"><span>or continue with</span></div>
-          <div className="ss-social-row">
-            <SocialCircleButton kind="google" label="Continue with Google" />
-            <SocialCircleButton kind="apple" label="Continue with Apple" />
-          </div>
+          {/* Google/Apple sign-in isn't built yet — re-add the divider and
+              <SocialCircleButton> row from components/SocialButtons once it is. */}
 
           <p className="ss-legal-foot">
             By continuing you agree to our Terms &amp; Conditions and Privacy Policy.
@@ -56,10 +52,12 @@ export default function AuthPage() {
 function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const justResetPassword = Boolean(location.state?.passwordReset);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -80,6 +78,9 @@ function LoginForm() {
   return (
     <>
       <h1 className="ss-login-title">Login</h1>
+      {justResetPassword && (
+        <p className="ss-success-text">Password reset — you can now log in.</p>
+      )}
       <form onSubmit={handleSubmit} className="ss-form">
         <label className="ss-field">
           <span>Email</span>
@@ -90,7 +91,9 @@ function LoginForm() {
           <input type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
         {error && <p className="ss-form-error">{error}</p>}
-        <button type="button" className="ss-link-btn ss-forgot">Forgot password?</button>
+        <button type="button" className="ss-link-btn ss-forgot" onClick={() => navigate("/forgot-password")}>
+          Forgot password?
+        </button>
         <button type="submit" className="ss-btn ss-btn-primary ss-btn-block" disabled={loading}>
           {loading ? "Logging in…" : "Login"}
         </button>
