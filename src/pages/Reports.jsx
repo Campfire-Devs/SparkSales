@@ -5,7 +5,6 @@ import {
 } from "react";
 
 import {
-  Download,
   FileDown,
   Printer,
   TrendingDown,
@@ -99,7 +98,7 @@ function Reports() {
   // READ SALES AND EXPENSES
   // ========================================
 
-  const sales = useMemo(() => {
+  const sales = (() => {
     try {
       return (
         JSON.parse(
@@ -109,9 +108,9 @@ function Reports() {
     } catch {
       return [];
     }
-  }, []);
+  })();
 
-  const expenses = useMemo(() => {
+  const expenses = (() => {
     try {
       return (
         JSON.parse(
@@ -121,7 +120,7 @@ function Reports() {
     } catch {
       return [];
     }
-  }, []);
+  })();
 
 
   // ========================================

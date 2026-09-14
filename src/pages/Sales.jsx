@@ -1,15 +1,5 @@
 import { useState, useEffect } from "react";
 import PageTemplate from "../components/ui/PageTemplate";
-const [editCategory, setEditCategory] =
-  useState("Snacks");
-
-const [
-  editPaymentMethod,
-  setEditPaymentMethod,
-] = useState("Cash");
-
-
-
 
 function Sales() {
   const [sales, setSales] = useState(() => JSON.parse(localStorage.getItem("sales")) || []);
@@ -37,6 +27,7 @@ const [search, setSearch] =
   const [editQuantity, setEditQuantity] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editCategory, setEditCategory] = useState("Snacks");
+  const [editPaymentMethod, setEditPaymentMethod] = useState("Cash");
 
   useEffect(() => {
     localStorage.setItem("sales", JSON.stringify(sales));
@@ -104,6 +95,7 @@ setShowForm(false);
       price: Number(editPrice),
       total: Number(editQuantity) * Number(editPrice),
       category: editCategory,
+      paymentMethod: editPaymentMethod,
     };
     const updatedSales = [...sales];
     updatedSales[editingIndex] = updatedSale;
@@ -305,6 +297,17 @@ setShowForm(false);
                 <option value="Crafts">Crafts</option>
                 <option value="Merch">Merch</option>
                 <option value="Services">Services</option>
+              </select>
+
+              <select
+                value={editPaymentMethod}
+                onChange={(e) => setEditPaymentMethod(e.target.value)}
+                className={selectClass}
+              >
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="EFT">EFT</option>
+                <option value="Other">Other</option>
               </select>
               
               <div className="flex gap-3 mt-2">
