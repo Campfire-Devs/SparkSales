@@ -40,6 +40,11 @@ export const api = {
   register: (data) => request("/auth/register", { method: "POST", body: data }),
   login: (data) => request("/auth/login", { method: "POST", body: data }),
   changePassword: (data) => request("/auth/change-password", { method: "PUT", body: data }),
+  forgotPassword: (email) => request("/auth/forgot-password", { method: "POST", body: { email } }),
+  resetPassword: (token, newPassword) =>
+    request("/auth/reset-password", { method: "POST", body: { token, newPassword } }),
+  sendDailySummary: (data) => request("/notifications/daily-summary", { method: "POST", body: data }),
+  sendLossAlert: (data) => request("/notifications/loss-alert", { method: "POST", body: data }),
 
   // Business
   getMyBusiness: () => request("/business"),

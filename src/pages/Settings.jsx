@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { api } from "../lib/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
-import { SocialCircleButton } from "../components/SocialButtons";
 import { BUSINESS_CATEGORIES } from "../utils/sparkSales";
 
 const MIN_COMMISSION_PERCENT = 5;
@@ -12,13 +11,32 @@ export default function SettingsPage() {
   const { account, logout } = useAuth();
   const { business: storedBusiness, setBusiness: saveBusiness } = useSparkSales();
   const business = storedBusiness;
-  const [teamMembers, setTeamMembers] = useState(() => readSettings("team", []));
-  const [appSettings, setAppSettings] = useState(() => readSettings("app", {
+  const namespace = accountNamespace(account);
+  const [teamMembers, setTeamMembers] = useState(() => readSettings(namespace, "team", []));
+  const [appSettings, setAppSettings] = useState(() => readSettings(namespace, "app", {
     dailySummaryEmail: false,
     notificationEmail: "",
     lossAlerts: false,
   }));
   const [deletionRequest, setDeletionRequest] = useState(null);
+
+  // If a different account logs in during this session (without a full page
+  // reload), re-read that account's own team/app settings instead of
+  // continuing to show whichever account's data loaded first. Guarded so it
+  // only fires on an actual account switch, not on every render — and
+  // useLayoutEffect (not useEffect) so it happens before paint, avoiding a
+  // flash of the previous account's data.
+  const previousNamespace = useRef(namespace);
+  useLayoutEffect(() => {
+    if (previousNamespace.current === namespace) return;
+    previousNamespace.current = namespace;
+    setTeamMembers(readSettings(namespace, "team", []));
+    setAppSettings(readSettings(namespace, "app", {
+      dailySummaryEmail: false,
+      notificationEmail: "",
+      lossAlerts: false,
+    }));
+  }, [namespace]);
 
   useEffect(() => {
     if (account?.email) {
@@ -36,7 +54,7 @@ export default function SettingsPage() {
 
       <BusinessSection business={business} onSave={saveBusiness} />
       <AccountSecuritySection account={account} />
-      <TeamSection teamMembers={teamMembers} setTeamMembers={setTeamMembers} />
+      <TeamSection teamMembers={teamMembers} setTeamMembers={setTeamMembers} namespace={namespace} />
       <ApplicationSettingsSection
         business={business} setBusiness={saveBusiness}
         appSettings={appSettings} setAppSettings={setAppSettings} account={account}
@@ -49,16 +67,23 @@ export default function SettingsPage() {
   );
 }
 
-function readSettings(key, fallback) {
+// Each account gets its own slice of localStorage, keyed by email — without
+// this, every account that ever logs in on the same browser would read and
+// overwrite the same team/app settings.
+function accountNamespace(account) {
+  return (account?.email || "guest").trim().toLowerCase();
+}
+
+function readSettings(namespace, key, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(`${SETTINGS_STORAGE_KEY}-${key}`)) ?? fallback;
+    return JSON.parse(localStorage.getItem(`${SETTINGS_STORAGE_KEY}-${namespace}-${key}`)) ?? fallback;
   } catch {
     return fallback;
   }
 }
 
-function writeSettings(key, value) {
-  localStorage.setItem(`${SETTINGS_STORAGE_KEY}-${key}`, JSON.stringify(value));
+function writeSettings(namespace, key, value) {
+  localStorage.setItem(`${SETTINGS_STORAGE_KEY}-${namespace}-${key}`, JSON.stringify(value));
 }
 
 function BusinessSection({ business, onSave }) {
@@ -164,15 +189,8 @@ function AccountSecuritySection({ account }) {
 
       <ChangePasswordForm />
 
-      <div className="ss-connected-head">Connected accounts</div>
-      <div className="ss-connected-row">
-        <div className="ss-connected-label">
-          <span className="ss-connected-icon"><SocialCircleButton kind="google" label="Google" disabled /></span>
-        </div>
-      </div>
-      <p className="ss-sub" style={{ marginTop: 8 }}>
-        Google/Apple sign-in isn't wired up on the backend yet — see the API README's "Google / Apple sign-in" section.
-      </p>
+      {/* Google/Apple account connections aren't built yet — re-add once
+          Sign in with Apple/Google is actually wired up on the backend. */}
     </section>
   );
 }
@@ -228,7 +246,7 @@ function ChangePasswordForm() {
   );
 }
 
-function TeamSection({ teamMembers, setTeamMembers }) {
+function TeamSection({ teamMembers, setTeamMembers, namespace }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState("Member");
@@ -239,7 +257,7 @@ function TeamSection({ teamMembers, setTeamMembers }) {
     const member = { teamMemberId: crypto.randomUUID(), name: name.trim(), role };
     setTeamMembers((m) => {
       const next = [...m, member];
-      writeSettings("team", next);
+      writeSettings(namespace, "team", next);
       return next;
     });
     setName(""); setRole("Member"); setAdding(false);
@@ -248,7 +266,7 @@ function TeamSection({ teamMembers, setTeamMembers }) {
   async function removeMember(id) {
     setTeamMembers((m) => {
       const next = m.filter((x) => x.teamMemberId !== id);
-      writeSettings("team", next);
+      writeSettings(namespace, "team", next);
       return next;
     });
   }
@@ -310,7 +328,7 @@ function ApplicationSettingsSection({ business, setBusiness, appSettings, setApp
   }
 
   async function saveSettings(next) {
-    writeSettings("app", next);
+    writeSettings(accountNamespace(account), "app", next);
     setAppSettings(next);
   }
 
