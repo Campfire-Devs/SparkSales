@@ -145,7 +145,10 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 const normalizeBusiness = (value) => {
   if (!value || value.name === "SparkSales Business") return null;
-  return value;
+  return {
+    ...value,
+    commissionRate: Math.max(Number(value.commissionRate) || 0.05, 0.05),
+  };
 };
 
 const SparkSalesContext = createContext(null);

@@ -1,4 +1,3 @@
-
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV ? "/api" : "https://localhost:5001/api");
@@ -27,7 +26,7 @@ async function request(path, { method = "GET", body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 204) return null; 
+  if (res.status === 204) return null;
   if (!res.ok) {
     const message = await res.text().catch(() => res.statusText);
     throw new Error(message || `Request to ${path} failed (${res.status})`);
@@ -41,6 +40,11 @@ export const api = {
   register: (data) => request("/auth/register", { method: "POST", body: data }),
   login: (data) => request("/auth/login", { method: "POST", body: data }),
   changePassword: (data) => request("/auth/change-password", { method: "PUT", body: data }),
+  forgotPassword: (email) => request("/auth/forgot-password", { method: "POST", body: { email } }),
+  resetPassword: (token, newPassword) =>
+    request("/auth/reset-password", { method: "POST", body: { token, newPassword } }),
+  sendDailySummary: (data) => request("/notifications/daily-summary", { method: "POST", body: data }),
+  sendLossAlert: (data) => request("/notifications/loss-alert", { method: "POST", body: data }),
 
   // Business
   getMyBusiness: () => request("/business"),
@@ -65,7 +69,8 @@ export const api = {
   updateSettings: (data) => request("/settings", { method: "PUT", body: data }),
 
   // Deletion requests
-  getDeletionRequest: () => request("/deletion-request"),
-  requestDeletion: (reason) => request("/deletion-request", { method: "POST", body: { reason } }),
+  getDeletionRequest: (email) => request(`/deletion-request?email=${encodeURIComponent(email)}`),
+  requestDeletion: (email, businessName, reason) =>
+    request("/deletion-request", { method: "POST", body: { email, businessName, reason } }),
   cancelDeletion: (id) => request(`/deletion-request/${id}/cancel`, { method: "POST" }),
 };

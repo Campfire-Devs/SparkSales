@@ -23,7 +23,14 @@ export function AppleGlyph() {
 export function SocialCircleButton({ kind, label }) {
   const [redirecting, setRedirecting] = useState(false);
 
+  // Google/Apple sign-in isn't wired up on the backend yet (no client IDs
+  // configured, no token exchange implemented) — show it as coming soon
+  // instead of sending people to a dead endpoint. Flip this to true once
+  // that's actually built and configured.
+  const isLive = false;
+
   function startOAuth() {
+    if (!isLive) return;
     setRedirecting(true);
     window.location.assign(getOAuthUrl(kind));
   }
@@ -32,10 +39,10 @@ export function SocialCircleButton({ kind, label }) {
     <button
       type="button"
       className={`ss-social-circle is-${kind}`}
-      disabled={redirecting}
+      disabled={redirecting || !isLive}
       onClick={startOAuth}
-      aria-label={label}
-      title={label}
+      aria-label={isLive ? label : `${label} — coming soon`}
+      title={isLive ? label : `${label} — coming soon`}
     >
       {kind === "google" ? <GoogleGlyph /> : <AppleGlyph />}
     </button>

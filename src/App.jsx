@@ -10,6 +10,8 @@ import AppLayout from "./components/layout/AppLayout";
 
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import RegisterBusiness from "./pages/RegisterBusiness";
 
 import Dashboard from "./pages/Dashboard";
@@ -28,11 +30,13 @@ import {
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { useSparkSales } from "./context/SparkSalesContext";
+import { useDailyNotifications } from "./hooks/useDailyNotifications";
 
 function App() {
   return (
     <AuthProvider>
       <SparkSalesProvider>
+        <NotificationWatcher />
         <BrowserRouter>
           <Routes>
           {/* Public pages */}
@@ -49,6 +53,27 @@ function App() {
           <Route
             path="/register"
             element={<AuthPage />}
+          />
+
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
+
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
+          />
+
+          {/* Informational pages — plain public pages, no app navigation shell */}
+          <Route
+            path="/privacy-policy"
+            element={<PrivacyPolicy />}
+          />
+
+          <Route
+            path="/terms-and-conditions"
+            element={<TermsConditions />}
           />
 
           {/* Application pages */}
@@ -82,24 +107,14 @@ function App() {
               path="/register-business"
               element={<RegisterBusiness />}
             />
-
-            {/* Informational pages */}
-            <Route
-              path="/privacy-policy"
-              element={<PrivacyPolicy />}
-            />
-
-            <Route
-              path="/terms-and-conditions"
-              element={<TermsConditions />}
-            />
-
-            {/* Catch-all */}
-            <Route
-              path="*"
-              element={<NotFound />}
-            />
           </Route>
+
+          {/* Catch-all — also outside AppLayout, so an unmatched link never
+              shows the authenticated nav shell either. */}
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
           </Routes>
         </BrowserRouter>
       </SparkSalesProvider>
@@ -109,12 +124,20 @@ function App() {
 
 export default App;
 
+// Runs the daily-summary / loss-alert check on every page, not just Settings
+// — otherwise it would only fire when someone happens to visit Settings
+// that day. Renders nothing.
+function NotificationWatcher() {
+  useDailyNotifications();
+  return null;
+}
+
 function BusinessRequired({ children }) {
   const { token } = useAuth();
   const { business } = useSparkSales();
   const location = useLocation();
 
-  if (!token) return <Navigate to="/register" replace state={{ from: location }} />;
+  if (!token) return <Navigate to="/login" replace state={{ from: location }} />;
   if (!business) return <Navigate to="/register-business" replace />;
   return children;
 }

@@ -1,5 +1,15 @@
 export const COMMISSION_RATE = 0.05;
 
+export const BUSINESS_CATEGORIES = [
+  "Baked Goods",
+  "Food & Drink",
+  "Crafts & Design",
+  "Fashion & Accessories",
+  "Tech & Gadgets",
+  "Services",
+  "Other",
+];
+
 export const SALE_CATEGORIES = [
   "Snacks",
   "Drinks",
@@ -54,64 +64,41 @@ export const formatDate = (iso) =>
     }
   );
 
-  export const calculateCommission = (
+const toNumber = (value) => Number(value ?? 0);
+
+export const calculateCommission = (
   grossProfitLoss,
   commissionRate = COMMISSION_RATE
 ) => {
-  const gross =
-    toNumber(grossProfitLoss);
+  const gross = toNumber(grossProfitLoss);
 
-  const rate =
-    Math.max(
-      0,
-      toNumber(commissionRate)
-    );
+  const rate = Math.max(0, toNumber(commissionRate));
 
-  return gross > 0
-    ? gross * rate
-    : 0;
+  return gross > 0 ? gross * rate : 0;
 };
 
-export const calculateNetProfit = (
-  grossProfitLoss,
-  commission
-) =>
-  toNumber(grossProfitLoss) -
-  toNumber(commission);
+export const calculateNetProfit = (grossProfitLoss, commission) =>
+  toNumber(grossProfitLoss) - toNumber(commission);
 
-  
-
-
-  export const calculateProfitMargin = (
-  revenue,
-  netProfit
-) => {
-  const totalRevenue =
-    toNumber(revenue);
+export const calculateProfitMargin = (revenue, netProfit) => {
+  const totalRevenue = toNumber(revenue);
 
   if (totalRevenue <= 0) {
     return 0;
   }
 
-  return (
-    toNumber(netProfit) /
-    totalRevenue
-  ) * 100;
+  return (toNumber(netProfit) / totalRevenue) * 100;
 };
 
-export const detectLoss = (
-  netProfit
-) => {
-  const amount =
-    toNumber(netProfit);
+export const detectLoss = (netProfit) => {
+  const amount = toNumber(netProfit);
 
   if (amount < 0) {
     return {
       isLoss: true,
       isBreakEven: false,
-      status: 'Loss',
-      lossAmount:
-        Math.abs(amount),
+      status: "Loss",
+      lossAmount: Math.abs(amount),
     };
   }
 
@@ -119,7 +106,7 @@ export const detectLoss = (
     return {
       isLoss: false,
       isBreakEven: true,
-      status: 'Break-even',
+      status: "Break-even",
       lossAmount: 0,
     };
   }
@@ -127,8 +114,37 @@ export const detectLoss = (
   return {
     isLoss: false,
     isBreakEven: false,
-    status: 'Profit',
+    status: "Profit",
     lossAmount: 0,
   };
 };
 
+// Every account gets its own slice of localStorage, keyed by email — shared
+// between Settings.jsx (which owns the "app"/"team" settings UI) and
+// anything else that needs to read the same per-account settings, like the
+// daily-summary/loss-alert notification check.
+export const APP_SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
+
+export function accountNamespace(account) {
+  return (account?.email || "guest").trim().toLowerCase();
+}
+
+export function readAccountSetting(account, key, fallback) {
+  try {
+    const namespace = accountNamespace(account);
+    const raw = localStorage.getItem(
+      `${APP_SETTINGS_STORAGE_KEY}-${namespace}-${key}`
+    );
+    return raw === null ? fallback : JSON.parse(raw) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function writeAccountSetting(account, key, value) {
+  const namespace = accountNamespace(account);
+  localStorage.setItem(
+    `${APP_SETTINGS_STORAGE_KEY}-${namespace}-${key}`,
+    JSON.stringify(value)
+  );
+}
