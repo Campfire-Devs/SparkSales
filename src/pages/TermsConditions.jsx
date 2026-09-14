@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const TermsConditions = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="mx-auto max-w-3xl space-y-10 py-8">
       {/* Header */}
@@ -16,13 +18,15 @@ const TermsConditions = () => {
           <p className="mt-3 text-gray-500">Last updated: September 2026</p>
         </div>
 
-        {/* Return Button */}
-        <Link
-          to="/dashboard"
+        {/* Return to wherever the person came from — not always "Dashboard",
+            since they may not have a business set up yet at this point. */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
           className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
         >
-          ← Dashboard
-        </Link>
+          ← Back
+        </button>
       </div>
 
       {/* Terms Sections */}
@@ -39,7 +43,7 @@ const TermsConditions = () => {
 
         <TermsSection
           title="3. Commission"
-          text="SparkSales applies a commission based on Gross Profit, currently starting at 5% (five percent), as shown in your account settings. Gross Profit is calculated as Total Sales minus Total Expenses. Users agree to enter accurate and complete data; we reserve the right to investigate and adjust commission where there is reasonable suspicion of inaccurate or manipulated records. The process for collecting commission will be confirmed and communicated before these Terms apply to any real payment obligation."
+          text="SparkSales applies a commission based on Gross Profit, currently starting at 5% (five percent). You can view and adjust this rate in your account settings, and your calculated commission is shown live on your dashboard and reports as you record sales and expenses. Gross Profit is calculated as Total Sales minus Total Expenses. Users agree to enter accurate and complete data; we reserve the right to investigate and adjust commission where there is reasonable suspicion of inaccurate or manipulated records. The process for collecting commission will be confirmed and communicated before these Terms apply to any real payment obligation."
         />
 
         <TermsSection
@@ -78,8 +82,8 @@ const TermsConditions = () => {
         />
 
         <TermsSection
-          title="11. Contact"
-          text="Questions regarding these Terms should be directed to the SparkSales team."
+         title="11. Contact"
+          text="Questions regarding these Terms should be directed to the SparkSales team at sparksales.team01@gmail.com."
         />
       </div>
     </div>

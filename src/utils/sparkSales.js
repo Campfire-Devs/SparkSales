@@ -71,3 +71,16 @@ export function writeAccountSetting(account, key, value) {
   const namespace = accountNamespace(account);
   localStorage.setItem(`${APP_SETTINGS_STORAGE_KEY}-${namespace}-${key}`, JSON.stringify(value));
 }
+
+// South African phone numbers: 10 digits, starting with 0 (e.g. 0821234567).
+// sanitizeSAPhoneInput strips anything that isn't a digit and caps the
+// length as the person types, so it's impossible to type an 11th digit or
+// a letter in the first place. isValidSAPhoneNumber is the final check
+// before saving.
+export function sanitizeSAPhoneInput(value) {
+  return value.replace(/\D/g, "").slice(0, 10);
+}
+
+export function isValidSAPhoneNumber(value) {
+  return /^0\d{9}$/.test(value);
+}
