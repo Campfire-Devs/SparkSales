@@ -157,11 +157,11 @@ export function SparkSalesProvider({ children }) {
    * Reload backend data whenever the authenticated session changes.
    */
   useEffect(() => {
-  const loadData = async () => {
-    await refreshData();
-  };
+  const timeoutId = setTimeout(() => {
+    void refreshData();
+  }, 0);
 
-  void loadData();
+  return () => clearTimeout(timeoutId);
 }, [refreshData]);
 
   /*
