@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 import { useSparkSales } from "../context/SparkSalesContext";
 import { useAuth } from "../context/AuthContext";
-import { apiRequest } from "../api/client";
+import { createBusiness } from "../api/businessApi";
 
 import { BrandLockup } from "../components/Brand";
 
@@ -39,7 +39,7 @@ function loadDraft() {
 
 function RegisterBusiness() {
   const { setBusiness } = useSparkSales();
-  const { token } = useAuth();
+  const { token, account } = useAuth();
   const nav = useNavigate();
 
   const [f, setF] = useState(loadDraft);
@@ -54,8 +54,7 @@ function RegisterBusiness() {
     }
   }, [nav, token]);
 
-  // Keep the unfinished form in sessionStorage so navigating to
-  // Terms & Conditions / Privacy Policy does not wipe it.
+  // Preserve draft while navigating to Terms / Privacy.
   useEffect(() => {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(f));
   }, [f]);
@@ -67,7 +66,6 @@ function RegisterBusiness() {
       return;
     }
 
-    setContactError("");
     setSubmitError("");
 
     if (!isValidSAPhoneNumber(f.contact)) {
@@ -77,50 +75,39 @@ function RegisterBusiness() {
       return;
     }
 
-    const startingCapital = Number(f.startingCapital);
-
-    if (!Number.isFinite(startingCapital) || startingCapital < 0) {
-      setSubmitError("Starting capital must be zero or greater.");
-      return;
-    }
-
-    setSaving(true);
+    setContactError("");
 
     try {
-      /*
-       * IMPORTANT:
-       * The backend determines the owner from the authenticated JWT.
-       *
-       * Therefore we only send fields expected by
-       * CreateBusinessRequest.
-       */
-      const payload = {
+      setSaving(true);
+
+      const business = await createBusiness({
         name: f.name.trim(),
-        category: f.category.trim(),
+        category: f.category,
         contact: f.contact.trim(),
         location: f.location.trim(),
         stallNumber: f.stallNumber.trim(),
-        startingCapital,
-      };
-
-      const createdBusiness = await apiRequest("/api/business", {
-        method: "POST",
-        body: JSON.stringify(payload),
+        startingCapital: Number(f.startingCapital) || 0,
       });
 
       /*
-       * Keep the frontend context synchronized with the
-       * business now stored in the backend.
+       * Temporary compatibility step:
+       * keep the returned business available to the existing
+       * SparkSales context while we finish removing localStorage
+       * from the financial system.
        */
-      setBusiness(createdBusiness);
+      setBusiness({
+        ...business,
+        owner: f.owner || account?.fullName || "Business Owner",
+      });
 
       sessionStorage.removeItem(DRAFT_KEY);
 
       nav("/dashboard");
     } catch (error) {
       setSubmitError(
-        error?.message ||
-          "We could not create your business profile. Please try again."
+        error instanceof Error
+          ? error.message
+          : "Unable to create your business. Please try again."
       );
     } finally {
       setSaving(false);
@@ -133,10 +120,7 @@ function RegisterBusiness() {
 
       <BrandLockup size={38} wordmarkSize="md" tagline />
 
-      <section
-        className="ss-setup-card"
-        aria-labelledby="setup-title"
-      >
+      <section className="ss-setup-card" aria-labelledby="setup-title">
         <div className="ss-setup-intro">
           <p className="ss-setup-eyebrow">SparkSales setup</p>
 
@@ -148,10 +132,7 @@ function RegisterBusiness() {
           </p>
         </div>
 
-        <form
-          onSubmit={submit}
-          className="ss-form ss-setup-form"
-        >
+        <form onSubmit={submit} className="ss-form ss-setup-form">
           <div className="ss-field-row">
             <Field
               label="Business name"
@@ -205,9 +186,7 @@ function RegisterBusiness() {
               />
 
               {contactError && (
-                <p className="ss-form-error">
-                  {contactError}
-                </p>
+                <p className="ss-form-error">{contactError}</p>
               )}
             </label>
           </div>
@@ -216,23 +195,13 @@ function RegisterBusiness() {
             <Field
               label="Location"
               value={f.location}
-              set={(v) =>
-                setF({
-                  ...f,
-                  location: v,
-                })
-              }
+              set={(v) => setF({ ...f, location: v })}
             />
 
             <Field
               label="Stall number"
               value={f.stallNumber}
-              set={(v) =>
-                setF({
-                  ...f,
-                  stallNumber: v,
-                })
-              }
+              set={(v) => setF({ ...f, stallNumber: v })}
             />
           </div>
 
@@ -254,6 +223,10 @@ function RegisterBusiness() {
               placeholder="e.g. 500"
             />
           </label>
+
+          {submitError && (
+            <p className="ss-form-error">{submitError}</p>
+          )}
 
           <label className="ss-setup-terms">
             <input
@@ -285,23 +258,12 @@ function RegisterBusiness() {
             .
           </label>
 
-          {submitError && (
-            <p
-              className="ss-form-error"
-              role="alert"
-            >
-              {submitError}
-            </p>
-          )}
-
           <button
             type="submit"
             className="ss-btn ss-btn-primary ss-btn-block"
             disabled={saving}
           >
-            {saving
-              ? "Creating business..."
-              : "Create business profile"}
+            {saving ? "Creating business..." : "Create business profile"}
           </button>
         </form>
       </section>
