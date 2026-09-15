@@ -28,33 +28,35 @@ public class TeamController : ControllerBase
     }
 
     // ---------------------------------------------------------
-    // GET /api/team
-    // ---------------------------------------------------------
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> GetTeam()
+// GET /api/team
+// ---------------------------------------------------------
+
+[HttpGet]
+public async Task<ActionResult<IEnumerable<object>>> GetTeam()
+{
+    var userId = User.GetUserId();
+
+    var businessId = await _db.BusinessMembers
+        .Where(member => member.UserId == userId)
+        .Select(member => (Guid?)member.BusinessId)
+        .FirstOrDefaultAsync();
+
+    if (businessId is null)
     {
-        var userId = User.GetUserId();
-
-        var businessId = await _db.BusinessMembers
-            .Where(member => member.UserId == userId)
-            .Select(member => (Guid?)member.BusinessId)
-            .FirstOrDefaultAsync();
-
-        if (businessId is null)
-        {
-            return NotFound("Set up your business first.");
-        }
-
-        var team = await _db.BusinessMembers
-            .AsNoTracking()
-            .Where(member => member.BusinessId == businessId.Value)
-            .OrderBy(member => member.Role)
-            .ThenBy(member => member.User.FullName)
-            .Select(member => ToResponse(member))
-            .ToListAsync();
-
-        return Ok(team);
+        return NotFound("Set up your business first.");
     }
+
+    var team = await _db.BusinessMembers
+        .AsNoTracking()
+        .Include(member => member.User)
+        .Where(member => member.BusinessId == businessId.Value)
+        .OrderBy(member => member.Role)
+        .ThenBy(member => member.User.FullName)
+        .Select(member => ToResponse(member))
+        .ToListAsync();
+
+    return Ok(team);
+}
 
     // ---------------------------------------------------------
     // POST /api/team
@@ -238,16 +240,16 @@ public class TeamController : ControllerBase
     }
 
     private static object ToResponse(BusinessMember member)
+{
+    return new
     {
-        return new
-        {
-            businessMemberId = member.BusinessMemberId,
-            businessId = member.BusinessId,
-            userId = member.UserId,
-            fullName = member.User.FullName,
-            email = member.User.Email,
-            role = member.Role,
-            joinedAt = member.JoinedAt
-        };
-    }
+        businessMemberId = member.BusinessMemberId,
+        businessId = member.BusinessId,
+        userId = member.UserId,
+        fullName = member.User?.FullName ?? "Unknown user",
+        email = member.User?.Email ?? "",
+        role = member.Role,
+        joinedAt = member.JoinedAt
+    };
+}
 }
