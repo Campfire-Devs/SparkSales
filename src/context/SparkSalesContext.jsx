@@ -11,6 +11,7 @@ import {
 
 import { apiRequest, setAuthToken } from "../api/client";
 import { COMMISSION_RATE, saleTotal } from "../utils/sparkSales";
+import { useAuth } from "./AuthContext";
 
 const normalizeBusiness = (value) => {
   if (!value) return null;
@@ -66,7 +67,7 @@ export function SparkSalesProvider({ children }) {
   const [business, setBusinessState] = useState(null);
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
-
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -77,15 +78,11 @@ export function SparkSalesProvider({ children }) {
    * Importantly, we do NOT read sales, expenses, or business
    * data from localStorage anymore.
    */
-  const getToken = useCallback(() => {
-    return localStorage.getItem("ss_token");
-  }, []);
 
   /*
    * Load all financial/business data from the backend.
    */
   const refreshData = useCallback(async () => {
-    const token = getToken();
 
     if (!token) {
       setBusinessState(null);
@@ -151,7 +148,7 @@ export function SparkSalesProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [token]);
 
   /*
    * Reload backend data whenever the authenticated session changes.
@@ -172,7 +169,6 @@ export function SparkSalesProvider({ children }) {
    */
   const setBusiness = useCallback(
     async (input) => {
-      const token = getToken();
 
       if (!token) {
         throw new Error("You must be logged in.");
@@ -213,7 +209,7 @@ export function SparkSalesProvider({ children }) {
 
       return normalizedBusiness;
     },
-    [business, getToken]
+    [business, token]
   );
 
   // ---------------------------------------------------------
