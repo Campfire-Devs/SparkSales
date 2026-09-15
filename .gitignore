@@ -35,4 +35,5 @@ backend/obj/
 .env
 .env.*
 !.env.example
-
+.env.local
+.env.*.local
