@@ -34,8 +34,9 @@ function App() {
   return (
     <AuthProvider>
       <SparkSalesProvider>
-        <NotificationWatcher />
         <BrowserRouter>
+          <RouteDebugger />
+          <NotificationWatcher />
           <Routes>
             {/* Public pages */}
             <Route path="/" element={<Landing />} />
@@ -125,8 +126,42 @@ function NotificationWatcher() {
 
 function BusinessRequired({ children }) {
   const { token } = useAuth();
-  const { business, loading, error } = useSparkSales();
+  const {
+    business,
+    loading,
+    error,
+  } = useSparkSales();
+
   const location = useLocation();
+
+  // eslint-disable-next-line no-undef
+  useEffect(() => {
+    console.group("🔐 BusinessRequired");
+    console.log("Current path:", location.pathname);
+    console.log("Token exists:", Boolean(token));
+    console.log("Business:", business);
+    console.log("Loading:", loading);
+    console.log("Error:", error);
+    console.log(
+      "Decision:",
+      !token
+        ? "REDIRECT → /login"
+        : loading
+          ? "WAIT → loading workspace"
+          : error
+            ? "SHOW ERROR"
+            : !business
+              ? "REDIRECT → /register-business"
+              : "ALLOW → protected page"
+    );
+    console.groupEnd();
+  }, [
+    token,
+    business,
+    loading,
+    error,
+    location.pathname,
+  ]);
 
   if (!token) {
     return (
@@ -143,22 +178,18 @@ function BusinessRequired({ children }) {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
-          Loading your workspace...⌛
+          Loading your workspace...
         </div>
       </div>
     );
   }
 
-  /*
-   * An API/network error is NOT the same thing as
-   * "this user has no business".
-   */
   if (error) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-6">
         <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
           <h2 className="text-lg font-extrabold text-slate-900">
-            Unable to load your workspace ⚠️
+            Unable to load your workspace
           </h2>
 
           <p className="mt-2 text-sm text-slate-500">
@@ -177,11 +208,6 @@ function BusinessRequired({ children }) {
     );
   }
 
-  /*
-   * Only redirect to business registration after
-   * the backend has successfully confirmed that
-   * this authenticated user has no business.
-   */
   if (!business) {
     return (
       <Navigate
@@ -192,4 +218,35 @@ function BusinessRequired({ children }) {
   }
 
   return children;
+}
+
+function RouteDebugger() {
+  const location = useLocation();
+  const { token, account, loading: authLoading } = useAuth();
+  const { business, loading: dataLoading, error: dataError } = useSparkSales();
+
+  // eslint-disable-next-line no-undef
+  useEffect(() => {
+    console.group("🚦 SparkSales Route Debug");
+    console.log("Path:", location.pathname);
+    console.log("Search:", location.search);
+    console.log("Token exists:", Boolean(token));
+    console.log("Account:", account);
+    console.log("Auth loading:", authLoading);
+    console.log("Business:", business);
+    console.log("Data loading:", dataLoading);
+    console.log("Data error:", dataError);
+    console.groupEnd();
+  }, [
+    location.pathname,
+    location.search,
+    token,
+    account,
+    authLoading,
+    business,
+    dataLoading,
+    dataError,
+  ]);
+
+  return null;
 }
