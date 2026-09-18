@@ -75,6 +75,15 @@ export function SparkSalesProvider({ children }) {
   const [error, setError] = useState(null);
 
   /*
+   * Tracks which authentication token has had its
+   * workspace data successfully loaded.
+   *
+   * This prevents BusinessRequired from treating
+   * a temporary business=null state as "no business".
+   */
+  const [loadedToken, setLoadedToken] = useState(null);
+
+  /*
    * Prevent an older refresh request from overwriting
    * data belonging to a newer authenticated session.
    *
@@ -102,6 +111,12 @@ export function SparkSalesProvider({ children }) {
    */
   const refreshData = useCallback(async () => {
     const requestId = ++refreshSequenceRef.current;
+
+    /*
+     * A new refresh belongs to the current authentication
+     * session. Until it completes, the workspace is not ready.
+     */
+    setLoadedToken(null);
 
     if (!token) {
       setBusinessState(null);
@@ -144,13 +159,16 @@ export function SparkSalesProvider({ children }) {
 
       /*
        * No business means this is a legitimate first-time
-       * setup state. There is no reason to request sales
-       * or expenses because those endpoints depend on a business.
+       * setup state.
+       *
+       * We can mark the CURRENT token as loaded here because
+       * the backend has confirmed that this user has no business.
        */
       if (!businessData) {
         setBusinessState(null);
         setSales([]);
         setExpenses([]);
+        setLoadedToken(token);
         return;
       }
 
@@ -184,6 +202,13 @@ export function SparkSalesProvider({ children }) {
           ? expensesData.map(normalizeExpense)
           : []
       );
+
+      /*
+       * IMPORTANT:
+       * The current user's complete workspace has now been loaded.
+       * BusinessRequired can safely decide whether a business exists.
+       */
+      setLoadedToken(token);
     } catch (requestError) {
       /*
        * Do not let an older request overwrite the current
@@ -203,6 +228,7 @@ export function SparkSalesProvider({ children }) {
       setBusinessState(null);
       setSales([]);
       setExpenses([]);
+      setLoadedToken(null);
     } finally {
       if (requestId === refreshSequenceRef.current) {
         setLoading(false);
@@ -265,6 +291,7 @@ export function SparkSalesProvider({ children }) {
       const normalizedBusiness = normalizeBusiness(response);
 
       setBusinessState(normalizedBusiness);
+      setLoadedToken(token);
 
       return normalizedBusiness;
     },
@@ -433,6 +460,15 @@ export function SparkSalesProvider({ children }) {
     };
   }, [business, sales, expenses]);
 
+  /*
+   * TRUE only when:
+   * - there is no authenticated user, or
+   * - backend data has finished loading for THIS exact token.
+   *
+   * This is the key protection against the login race.
+   */
+  const dataReady = !token || loadedToken === token;
+
   const value = useMemo(
     () => ({
       business,
@@ -456,6 +492,7 @@ export function SparkSalesProvider({ children }) {
       loading,
       error,
       refreshData,
+      dataReady,
     }),
     [
       business,
@@ -473,6 +510,7 @@ export function SparkSalesProvider({ children }) {
       loading,
       error,
       refreshData,
+      dataReady,
     ]
   );
 
