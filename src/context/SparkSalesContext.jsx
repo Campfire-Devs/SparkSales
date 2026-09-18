@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -67,15 +68,32 @@ export function SparkSalesProvider({ children }) {
   const [business, setBusinessState] = useState(null);
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
+
   const { token } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /*
+   * Prevent an older refresh request from overwriting
+   * data belonging to a newer authenticated session.
+   *
+   * Example:
+   * User A request starts
+   * User B logs in
+   * User B request starts
+   * User A request finishes last
+   *
+   * Without this guard, User A's response could overwrite
+   * User B's business state.
+   */
+  const refreshSequenceRef = useRef(0);
 
   /*
    * AuthContext owns the actual JWT state.
    * We receive it through the token stored by AuthContext.
    *
-   * Importantly, we do NOT read sales, expenses, or business
+   * We do NOT read sales, expenses, or business
    * data from localStorage anymore.
    */
 
@@ -83,6 +101,7 @@ export function SparkSalesProvider({ children }) {
    * Load all financial/business data from the backend.
    */
   const refreshData = useCallback(async () => {
+    const requestId = ++refreshSequenceRef.current;
 
     if (!token) {
       setBusinessState(null);
@@ -116,10 +135,41 @@ export function SparkSalesProvider({ children }) {
         }
       }
 
+      /*
+       * Ignore responses from an older authentication session.
+       */
+      if (requestId !== refreshSequenceRef.current) {
+        return;
+      }
+
+      /*
+       * No business means this is a legitimate first-time
+       * setup state. There is no reason to request sales
+       * or expenses because those endpoints depend on a business.
+       */
+      if (!businessData) {
+        setBusinessState(null);
+        setSales([]);
+        setExpenses([]);
+        return;
+      }
+
+      /*
+       * Business exists, so now load the financial data
+       * belonging to the same authenticated user.
+       */
       const [salesData, expensesData] = await Promise.all([
         apiRequest("/api/sales"),
         apiRequest("/api/expenses"),
       ]);
+
+      /*
+       * The user/session may have changed while the requests
+       * were in flight. Never apply stale responses.
+       */
+      if (requestId !== refreshSequenceRef.current) {
+        return;
+      }
 
       setBusinessState(normalizeBusiness(businessData));
 
@@ -135,6 +185,14 @@ export function SparkSalesProvider({ children }) {
           : []
       );
     } catch (requestError) {
+      /*
+       * Do not let an older request overwrite the current
+       * user's state or error.
+       */
+      if (requestId !== refreshSequenceRef.current) {
+        return;
+      }
+
       console.error("Failed to load SparkSales data:", requestError);
 
       setError(
@@ -146,20 +204,25 @@ export function SparkSalesProvider({ children }) {
       setSales([]);
       setExpenses([]);
     } finally {
-      setLoading(false);
+      if (requestId === refreshSequenceRef.current) {
+        setLoading(false);
+      }
     }
   }, [token]);
 
   /*
    * Reload backend data whenever the authenticated session changes.
+   *
+   * The tiny delay allows AuthContext to finish its state update
+   * before the backend refresh begins.
    */
   useEffect(() => {
-  const timeoutId = setTimeout(() => {
-    void refreshData();
-  }, 0);
+    const timeoutId = setTimeout(() => {
+      void refreshData();
+    }, 0);
 
-  return () => clearTimeout(timeoutId);
-}, [refreshData]);
+    return () => clearTimeout(timeoutId);
+  }, [refreshData]);
 
   /*
    * Create or update the current business.
@@ -169,7 +232,6 @@ export function SparkSalesProvider({ children }) {
    */
   const setBusiness = useCallback(
     async (input) => {
-
       if (!token) {
         throw new Error("You must be logged in.");
       }
@@ -192,10 +254,7 @@ export function SparkSalesProvider({ children }) {
         startingCapital: Number(input.startingCapital ?? 0),
       };
 
-      const endpoint = business
-        ? "/api/business"
-        : "/api/business";
-
+      const endpoint = "/api/business";
       const method = business ? "PUT" : "POST";
 
       const response = await apiRequest(endpoint, {
