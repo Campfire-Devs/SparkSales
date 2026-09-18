@@ -125,28 +125,70 @@ function NotificationWatcher() {
 
 function BusinessRequired({ children }) {
   const { token } = useAuth();
-  const { business, loading } = useSparkSales();
+  const { business, loading, error } = useSparkSales();
   const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }}
+      />
+    );
   }
 
-  // Wait for the backend to determine whether this user
-  // already has a business.
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
-          Loading your workspace...
+          Loading your workspace...⌛
         </div>
       </div>
     );
   }
 
+  /*
+   * An API/network error is NOT the same thing as
+   * "this user has no business".
+   */
+  if (error) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
+          <h2 className="text-lg font-extrabold text-slate-900">
+            Unable to load your workspace ⚠️
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-500">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 rounded-xl bg-[#063D35] px-5 py-3 text-sm font-bold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /*
+   * Only redirect to business registration after
+   * the backend has successfully confirmed that
+   * this authenticated user has no business.
+   */
   if (!business) {
-    return <Navigate to="/register-business" replace />;
+    return (
+      <Navigate
+        to="/register-business"
+        replace
+      />
+    );
   }
 
   return children;
