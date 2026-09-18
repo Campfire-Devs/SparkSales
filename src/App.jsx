@@ -24,9 +24,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsConditions from "./pages/TermsConditions";
 import NotFound from "./pages/NotFound";
 
-import {
-  SparkSalesProvider,
-} from "./context/SparkSalesContext";
+import { SparkSalesProvider } from "./context/SparkSalesContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { useSparkSales } from "./context/SparkSalesContext";
@@ -39,82 +37,75 @@ function App() {
         <NotificationWatcher />
         <BrowserRouter>
           <Routes>
-          {/* Public pages */}
-          <Route
-            path="/"
-            element={<Landing />}
-          />
+            {/* Public pages */}
+            <Route path="/" element={<Landing />} />
 
-          <Route
-            path="/login"
-            element={<AuthPage />}
-          />
+            <Route path="/login" element={<AuthPage />} />
 
-          <Route
-            path="/register"
-            element={<AuthPage />}
-          />
+            <Route path="/register" element={<AuthPage />} />
 
-          <Route
-            path="/forgot-password"
-            element={<ForgotPassword />}
-          />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route
-            path="/reset-password"
-            element={<ResetPassword />}
-          />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Informational pages — plain public pages, no app navigation shell */}
-          <Route
-            path="/privacy-policy"
-            element={<PrivacyPolicy />}
-          />
+            {/* Informational pages — plain public pages, no app navigation shell */}
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-          <Route
-            path="/terms-and-conditions"
-            element={<TermsConditions />}
-          />
+            <Route path="/terms-and-conditions" element={<TermsConditions />} />
 
-          {/* Application pages */}
-          <Route element={<AppLayout />}>
-            <Route
-              path="/dashboard"
-              element={<BusinessRequired><Dashboard /></BusinessRequired>}
-            />
+            {/* Application pages */}
+            <Route element={<AppLayout />}>
+              <Route
+                path="/dashboard"
+                element={
+                  <BusinessRequired>
+                    <Dashboard />
+                  </BusinessRequired>
+                }
+              />
 
-            <Route
-              path="/sales"
-              element={<BusinessRequired><Sales /></BusinessRequired>}
-            />
+              <Route
+                path="/sales"
+                element={
+                  <BusinessRequired>
+                    <Sales />
+                  </BusinessRequired>
+                }
+              />
 
-            <Route
-              path="/expenses"
-              element={<BusinessRequired><Expenses /></BusinessRequired>}
-            />
+              <Route
+                path="/expenses"
+                element={
+                  <BusinessRequired>
+                    <Expenses />
+                  </BusinessRequired>
+                }
+              />
 
-            <Route
-              path="/reports"
-              element={<BusinessRequired><Reports /></BusinessRequired>}
-            />
+              <Route
+                path="/reports"
+                element={
+                  <BusinessRequired>
+                    <Reports />
+                  </BusinessRequired>
+                }
+              />
 
-            <Route
-              path="/settings"
-              element={<BusinessRequired><Settings /></BusinessRequired>}
-            />
+              <Route
+                path="/settings"
+                element={
+                  <BusinessRequired>
+                    <Settings />
+                  </BusinessRequired>
+                }
+              />
 
-            <Route
-              path="/register-business"
-              element={<RegisterBusiness />}
-            />
-          </Route>
+              <Route path="/register-business" element={<RegisterBusiness />} />
+            </Route>
 
-          {/* Catch-all — also outside AppLayout, so an unmatched link never
+            {/* Catch-all — also outside AppLayout, so an unmatched link never
               shows the authenticated nav shell either. */}
-          <Route
-            path="*"
-            element={<NotFound />}
-          />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </SparkSalesProvider>
@@ -134,10 +125,29 @@ function NotificationWatcher() {
 
 function BusinessRequired({ children }) {
   const { token } = useAuth();
-  const { business } = useSparkSales();
+  const { business, loading } = useSparkSales();
   const location = useLocation();
 
-  if (!token) return <Navigate to="/login" replace state={{ from: location }} />;
-  if (!business) return <Navigate to="/register-business" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // Wait for the backend to determine whether this user
+  // already has a business.
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
+          Loading your workspace...
+        </div>
+      </div>
+    );
+  }
+
+  if (!business) {
+    return <Navigate to="/register-business" replace />;
+  }
+
   return children;
 }
