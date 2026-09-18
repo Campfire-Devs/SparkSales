@@ -5,7 +5,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-
+import { useEffect } from "react";
 import AppLayout from "./components/layout/AppLayout";
 
 import Landing from "./pages/Landing";
@@ -134,7 +134,6 @@ function BusinessRequired({ children }) {
 
   const location = useLocation();
 
-  // eslint-disable-next-line no-undef
   useEffect(() => {
     console.group("🔐 BusinessRequired");
     console.log("Current path:", location.pathname);
@@ -225,7 +224,6 @@ function RouteDebugger() {
   const { token, account, loading: authLoading } = useAuth();
   const { business, loading: dataLoading, error: dataError } = useSparkSales();
 
-  // eslint-disable-next-line no-undef
   useEffect(() => {
     console.group("🚦 SparkSales Route Debug");
     console.log("Path:", location.pathname);
