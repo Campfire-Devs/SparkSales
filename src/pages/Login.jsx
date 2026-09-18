@@ -16,7 +16,7 @@ function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      nav("/dashboard");
+      nav("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Incorrect email or password.");
     } finally {
@@ -44,7 +44,9 @@ function Login() {
             value={password}
             onChange={setPassword}
           />
-          {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+          {error && (
+            <p className="text-sm font-semibold text-red-600">{error}</p>
+          )}
           <button
             disabled={loading}
             className="w-full rounded-xl bg-[#063D35] py-3 text-sm font-bold text-white disabled:opacity-60"
