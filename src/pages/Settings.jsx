@@ -26,12 +26,16 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-
+import { useEffect, useState } from "react";
 import { api } from "../lib/apiClient";
 import {
   apiRequest,
   setAuthToken,
 } from "../api/client";
+import {
+  getSettings,
+  updateSettings,
+} from "../api/settingsApi";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
 import {
@@ -80,6 +84,66 @@ const sectionVariants = {
   },
 };
 
+useEffect(() => {
+  if (!token) {
+    return;
+  }
+
+  let active = true;
+
+  async function loadSettings() {
+    setSettingsLoading(true);
+    setSettingsError("");
+
+    try {
+      setAuthToken(token);
+
+      const response = await getSettings();
+
+      const nextSettings = {
+        dailySummaryEmail:
+          Boolean(response?.dailySummaryEmail),
+
+        notificationEmail:
+          response?.notificationEmail || "",
+
+        lossAlerts:
+          Boolean(response?.lossAlerts),
+      };
+
+      if (!active) {
+        return;
+      }
+
+      setAppSettings(nextSettings);
+      setDraftAppSettings(nextSettings);
+    } catch (error) {
+      if (!active) {
+        return;
+      }
+
+      console.error(
+        "Failed to load application settings:",
+        error,
+      );
+
+      setSettingsError(
+        error?.message ||
+          "Unable to load your application settings.",
+      );
+    } finally {
+      if (active) {
+        setSettingsLoading(false);
+      }
+    }
+  }
+
+  void loadSettings();
+
+  return () => {
+    active = false;
+  };
+}, [token]);
 export default function SettingsPage() {
   const { account, logout, token } = useAuth();
 
@@ -96,13 +160,14 @@ export default function SettingsPage() {
     readSettings(namespace, "team", []),
   );
 
-  const [appSettings, setAppSettings] = useState(() =>
-    readSettings(
-      namespace,
-      "app",
-      APP_DEFAULTS,
-    ),
-  );
+  const [appSettings, setAppSettings] =
+  useState(APP_DEFAULTS);
+
+const [settingsLoading, setSettingsLoading] =
+  useState(true);
+
+const [settingsError, setSettingsError] =
+  useState("");
 
   const [draftAppSettings, setDraftAppSettings] =
     useState(appSettings);
