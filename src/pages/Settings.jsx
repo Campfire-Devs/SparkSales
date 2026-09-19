@@ -199,30 +199,62 @@ const [settingsError, setSettingsError] =
   }
 
   async function saveApplicationSettings() {
-    setSaveStatus("saving");
-
-    try {
-      writeSettings(
-        namespace,
-        "app",
-        draftAppSettings,
-      );
-
-      setAppSettings(draftAppSettings);
-      setSaveStatus("success");
-
-      window.setTimeout(() => {
-        setSaveStatus("idle");
-      }, 2600);
-    } catch (error) {
-      console.error(
-        "Failed to save application settings:",
-        error,
-      );
-
-      setSaveStatus("error");
-    }
+  if (!token) {
+    setSaveStatus("error");
+    return;
   }
+
+  setSaveStatus("saving");
+  setSettingsError("");
+
+  try {
+    setAuthToken(token);
+
+    const response = await updateSettings({
+      dailySummaryEmail:
+        Boolean(draftAppSettings.dailySummaryEmail),
+
+      notificationEmail:
+        draftAppSettings.notificationEmail?.trim() ||
+        null,
+
+      lossAlerts:
+        Boolean(draftAppSettings.lossAlerts),
+    });
+
+    const savedSettings = {
+      dailySummaryEmail:
+        Boolean(response?.dailySummaryEmail),
+
+      notificationEmail:
+        response?.notificationEmail || "",
+
+      lossAlerts:
+        Boolean(response?.lossAlerts),
+    };
+
+    setAppSettings(savedSettings);
+    setDraftAppSettings(savedSettings);
+
+    setSaveStatus("success");
+
+    window.setTimeout(() => {
+      setSaveStatus("idle");
+    }, 2600);
+  } catch (error) {
+    console.error(
+      "Failed to save application settings:",
+      error,
+    );
+
+    setSettingsError(
+      error?.message ||
+        "We couldn't save your application settings.",
+    );
+
+    setSaveStatus("error");
+  }
+}
 
   return (
     <motion.div
