@@ -572,6 +572,7 @@ function BusinessSection({
   const [contactError, setContactError] =
     useState("");
 
+  // eslint-disable-next-line no-unused-vars
   const initials = businessInitials(
     business.name,
   );
