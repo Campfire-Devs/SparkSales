@@ -74,59 +74,7 @@ const sectionVariants = {
   },
 };
 
-useEffect(() => {
-  if (!token) {
-    return;
-  }
 
-  let active = true;
-
-  async function loadSettings() {
-    setSettingsLoading(true);
-    setSettingsError("");
-
-    try {
-      setAuthToken(token);
-
-      const response = await getSettings();
-
-      const nextSettings = {
-        dailySummaryEmail: Boolean(response?.dailySummaryEmail),
-
-        notificationEmail: response?.notificationEmail || "",
-
-        lossAlerts: Boolean(response?.lossAlerts),
-      };
-
-      if (!active) {
-        return;
-      }
-
-      setAppSettings(nextSettings);
-      setDraftAppSettings(nextSettings);
-    } catch (error) {
-      if (!active) {
-        return;
-      }
-
-      console.error("Failed to load application settings:", error);
-
-      setSettingsError(
-        error?.message || "Unable to load your application settings.",
-      );
-    } finally {
-      if (active) {
-        setSettingsLoading(false);
-      }
-    }
-  }
-
-  void loadSettings();
-
-  return () => {
-    active = false;
-  };
-}, [token]);
 export default function SettingsPage() {
   const { account, logout, token } = useAuth();
 
@@ -138,25 +86,6 @@ export default function SettingsPage() {
 
   const business = storedBusiness;
   const namespace = accountNamespace(account);
-
-  const [teamMembers, setTeamMembers] = useState(() =>
-    readSettings(namespace, "team", []),
-  );
-
-  const [appSettings, setAppSettings] = useState(APP_DEFAULTS);
-
-  const [settingsLoading, setSettingsLoading] = useState(true);
-
-  const [settingsError, setSettingsError] = useState("");
-
-  const [draftAppSettings, setDraftAppSettings] = useState(appSettings);
-
-  const appSettingsDirty =
-    JSON.stringify(appSettings) !== JSON.stringify(draftAppSettings);
-
-  const [saveStatus, setSaveStatus] = useState("idle");
-
-  const [deletionRequest, setDeletionRequest] = useState(null);
 
   if (!business) {
     return (
@@ -173,6 +102,100 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  return (
+    <SettingsContent
+      key={namespace}
+      account={account}
+      token={token}
+      business={business}
+      saveBusiness={saveBusiness}
+      refreshData={refreshData}
+      logout={logout}
+      namespace={namespace}
+    />
+  );
+}
+
+function SettingsContent({
+  account,
+  token,
+  business,
+  saveBusiness,
+  refreshData,
+  logout,
+  namespace,
+}) {
+  const [teamMembers, setTeamMembers] = useState(() =>
+    readSettings(namespace, "team", []),
+  );
+
+  const [appSettings, setAppSettings] = useState(APP_DEFAULTS);
+
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  const [settingsError, setSettingsError] = useState("");
+
+  const [draftAppSettings, setDraftAppSettings] =
+    useState(APP_DEFAULTS);
+
+  const appSettingsDirty =
+    JSON.stringify(appSettings) !== JSON.stringify(draftAppSettings);
+
+  const [saveStatus, setSaveStatus] = useState("idle");
+
+  const [deletionRequest, setDeletionRequest] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadSettings() {
+      try {
+        setAuthToken(token);
+        const response = await getSettings();
+
+        const nextSettings = {
+          dailySummaryEmail: Boolean(response?.dailySummaryEmail),
+          notificationEmail: response?.notificationEmail || "",
+          lossAlerts: Boolean(response?.lossAlerts),
+        };
+
+        if (!active) {
+          return;
+        }
+
+        setAppSettings(nextSettings);
+        setDraftAppSettings(nextSettings);
+        setSettingsError("");
+        setSettingsLoading(false);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        console.error(
+          "Failed to load application settings:",
+          error,
+        );
+
+        setSettingsError(
+          error?.message ||
+            "Unable to load your application settings.",
+        );
+        setSettingsLoading(false);
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   async function saveApplicationSettings() {
     if (!token) {
@@ -401,6 +424,7 @@ export default function SettingsPage() {
 
       <motion.div variants={sectionVariants}>
         <ApplicationSettingsSection
+          key={business.businessId || business.id || business.name}
           business={business}
           token={token}
           refreshData={refreshData}
@@ -609,9 +633,6 @@ function BusinessSection({ business, onSave }) {
   const [saved, setSaved] = useState(false);
 
   const [contactError, setContactError] = useState("");
-
-  // eslint-disable-next-line no-unused-vars
-  const initials = businessInitials(business.name);
 
   async function save(event) {
     event.preventDefault();
@@ -1414,27 +1435,7 @@ function ApplicationSettingsSection({
     email: "",
   };
 
-  if (settingsLoading) {
-    return (
-      <motion.section
-        variants={sectionVariants}
-        className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
-          Loading your application settings...
-        </div>
-      </motion.section>
-    );
-  }
-  {
-    settingsError && (
-      <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-medium text-red-600 sm:px-6">
-        {settingsError}
-      </div>
-    );
-  }
-  const [rateInput, setRateInput] = useState(
+  const [rateInput, setRateInput] = useState(() =>
     String(
       Math.max(
         MIN_COMMISSION_PERCENT,
@@ -1448,6 +1449,20 @@ function ApplicationSettingsSection({
   const [rateSaved, setRateSaved] = useState(false);
 
   const [rateError, setRateError] = useState("");
+
+  if (settingsLoading) {
+    return (
+      <motion.section
+        variants={sectionVariants}
+        className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
+          Loading your application settings...
+        </div>
+      </motion.section>
+    );
+  }
 
   async function saveRate() {
     const parsed = Number(rateInput) || MIN_COMMISSION_PERCENT;
@@ -1527,6 +1542,12 @@ function ApplicationSettingsSection({
           </span>
         </div>
       </div>
+
+      {settingsError && (
+        <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-medium text-red-600 sm:px-6">
+          {settingsError}
+        </div>
+      )}
 
       <div className="divide-y divide-slate-100">
         {/* Commission */}
