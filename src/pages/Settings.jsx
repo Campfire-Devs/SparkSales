@@ -1402,12 +1402,14 @@ function TeamSection({ teamMembers, setTeamMembers, namespace }) {
 /* ========================================================= */
 
 function ApplicationSettingsSection({
-  business,
+    business,
   token,
   refreshData,
   appSettings,
   setAppSettings,
   account,
+  settingsLoading,
+  settingsError,
 }) {
   const accountDetails = account || {
     email: "",
