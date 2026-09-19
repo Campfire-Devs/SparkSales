@@ -22,7 +22,6 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useState } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/apiClient";
 import { apiRequest, setAuthToken } from "../api/client";
@@ -1402,7 +1401,7 @@ function TeamSection({ teamMembers, setTeamMembers, namespace }) {
 /* ========================================================= */
 
 function ApplicationSettingsSection({
-    business,
+  business,
   token,
   refreshData,
   appSettings,
@@ -1415,6 +1414,26 @@ function ApplicationSettingsSection({
     email: "",
   };
 
+  if (settingsLoading) {
+    return (
+      <motion.section
+        variants={sectionVariants}
+        className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7FCFC0] border-t-[#063D35]" />
+          Loading your application settings...
+        </div>
+      </motion.section>
+    );
+  }
+  {
+    settingsError && (
+      <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-medium text-red-600 sm:px-6">
+        {settingsError}
+      </div>
+    );
+  }
   const [rateInput, setRateInput] = useState(
     String(
       Math.max(
