@@ -1,468 +1,2368 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+import {
+  AlertTriangle,
+  Bell,
+  Building2,
+  Check,
+  ChevronDown,
+  Clock3,
+  Crown,
+  Eye,
+  EyeOff,
+  Mail,
+  MapPin,
+  Pencil,
+  Plus,
+  Save,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  UserPlus,
+  Users,
+  Wallet,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+
 import { api } from "../lib/apiClient";
+import {
+  apiRequest,
+  setAuthToken,
+} from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
-import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber } from "../utils/sparkSales";
+import {
+  BUSINESS_CATEGORIES,
+  sanitizeSAPhoneInput,
+  isValidSAPhoneNumber,
+} from "../utils/sparkSales";
 
 const MIN_COMMISSION_PERCENT = 5;
 const SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
 
+const APP_DEFAULTS = {
+  dailySummaryEmail: false,
+  notificationEmail: "",
+  lossAlerts: false,
+};
+
+const pageVariants = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: "easeOut",
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const sectionVariants = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.42,
+      ease: "easeOut",
+    },
+  },
+};
+
 export default function SettingsPage() {
-  const { account, logout } = useAuth();
-  const { business: storedBusiness, setBusiness: saveBusiness } = useSparkSales();
+  const { account, logout, token } = useAuth();
+
+  const {
+    business: storedBusiness,
+    setBusiness: saveBusiness,
+    refreshData,
+  } = useSparkSales();
+
   const business = storedBusiness;
   const namespace = accountNamespace(account);
-  const [teamMembers, setTeamMembers] = useState(() => readSettings(namespace, "team", []));
-  const [appSettings, setAppSettings] = useState(() => readSettings(namespace, "app", {
-    dailySummaryEmail: false,
-    notificationEmail: "",
-    lossAlerts: false,
-  }));
-  const [deletionRequest, setDeletionRequest] = useState(null);
 
-  // If a different account logs in during this session (without a full page
-  // reload), re-read that account's own team/app settings instead of
-  // continuing to show whichever account's data loaded first. Guarded so it
-  // only fires on an actual account switch, not on every render — and
-  // useLayoutEffect (not useEffect) so it happens before paint, avoiding a
-  // flash of the previous account's data.
-  const previousNamespace = useRef(namespace);
-  useLayoutEffect(() => {
-    if (previousNamespace.current === namespace) return;
-    previousNamespace.current = namespace;
-    setTeamMembers(readSettings(namespace, "team", []));
-    setAppSettings(readSettings(namespace, "app", {
-      dailySummaryEmail: false,
-      notificationEmail: "",
-      lossAlerts: false,
-    }));
-  }, [namespace]);
+  const [teamMembers, setTeamMembers] = useState(() =>
+    readSettings(namespace, "team", []),
+  );
 
-  useEffect(() => {
-    if (account?.email) {
-      api.getDeletionRequest(account.email).then(setDeletionRequest).catch(() => {});
+  const [appSettings, setAppSettings] = useState(() =>
+    readSettings(
+      namespace,
+      "app",
+      APP_DEFAULTS,
+    ),
+  );
+
+  const [draftAppSettings, setDraftAppSettings] =
+    useState(appSettings);
+
+  const appSettingsDirty =
+    JSON.stringify(appSettings) !==
+    JSON.stringify(draftAppSettings);
+
+  const [saveStatus, setSaveStatus] =
+    useState("idle");
+
+  const [deletionRequest, setDeletionRequest] =
+    useState(null);
+
+  if (!business) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-6">
+        <div className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E6F7F3] text-[#063D35]">
+            <Building2 size={24} />
+          </div>
+
+          <p className="mt-4 text-sm font-semibold text-slate-500">
+            Set up your business first.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  async function saveApplicationSettings() {
+    setSaveStatus("saving");
+
+    try {
+      writeSettings(
+        namespace,
+        "app",
+        draftAppSettings,
+      );
+
+      setAppSettings(draftAppSettings);
+      setSaveStatus("success");
+
+      window.setTimeout(() => {
+        setSaveStatus("idle");
+      }, 2600);
+    } catch (error) {
+      console.error(
+        "Failed to save application settings:",
+        error,
+      );
+
+      setSaveStatus("error");
     }
-  }, [account?.email]);
-
-  if (!business) return <div className="ss-screen"><p className="ss-sub">Set up your business first.</p></div>;
+  }
 
   return (
-    <div className="ss-screen">
-      <div className="ss-screen-head">
-        <div><h1 className="ss-h1">Settings</h1><p className="ss-sub">Your account, business profile, team, and app preferences.</p></div>
-      </div>
+    <motion.div
+      className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8"
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* ===================================================== */}
+      {/* HEADER                                                  */}
+      {/* ===================================================== */}
 
-      <BusinessSection business={business} onSave={saveBusiness} />
-      <AccountSecuritySection account={account} />
-      <TeamSection teamMembers={teamMembers} setTeamMembers={setTeamMembers} namespace={namespace} />
-      <ApplicationSettingsSection
-        business={business} setBusiness={saveBusiness}
-        appSettings={appSettings} setAppSettings={setAppSettings} account={account}
+      <motion.div
+        variants={sectionVariants}
+        className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+      >
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#B8F2E6] bg-[#E6F7F3] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#063D35]">
+            <Sparkles size={13} />
+            Workspace settings
+          </div>
+
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-[#063D35] sm:text-4xl">
+            Settings
+          </h1>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+            Manage your business profile, account security,
+            team and SparkSales preferences from one place.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+            <ShieldCheck size={17} />
+          </div>
+
+          <div>
+            <p className="text-xs font-bold text-slate-400">
+              Account
+            </p>
+
+            <p className="max-w-[200px] truncate text-sm font-bold text-slate-800">
+              {account?.email || "Signed in"}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ===================================================== */}
+      {/* BUSINESS PROFILE HERO                                  */}
+      {/* ===================================================== */}
+
+      <motion.section
+        variants={sectionVariants}
+        className="overflow-hidden rounded-3xl border border-[#0B6156] bg-[#063D35] shadow-xl shadow-[#063D35]/10"
+      >
+        <div className="relative p-5 sm:p-6 lg:p-7">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#7FCFC0]/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-1/3 h-44 w-44 rounded-full bg-white/5 blur-2xl" />
+
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <motion.div
+                whileHover={{
+                  scale: 1.04,
+                  rotate: -2,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 18,
+                }}
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#7FCFC0] text-lg font-black text-[#063D35] shadow-lg shadow-black/10"
+              >
+                {businessInitials(
+                  business.name,
+                )}
+              </motion.div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B8F2E6]">
+                  Active business
+                </p>
+
+                <h2 className="mt-1 truncate text-2xl font-black text-white">
+                  {business.name}
+                </h2>
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-slate-200">
+                    {business.category}
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-slate-200">
+                    Stall {business.stallNumber || "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <motion.button
+              type="button"
+              whileHover={{
+                y: -2,
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              onClick={() => {
+                const editButton =
+                  document.getElementById(
+                    "business-edit-trigger",
+                  );
+
+                editButton?.click();
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#063D35] shadow-sm transition hover:bg-[#F7FAF9]"
+            >
+              <Pencil size={15} />
+              Edit business
+            </motion.button>
+          </div>
+
+          <div className="relative mt-6 grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <HeroStat
+              icon={MapPin}
+              label="Location"
+              value={business.location || "Not set"}
+            />
+
+            <HeroStat
+              icon={Wallet}
+              label="Starting capital"
+              value={`R ${Number(
+                business.startingCapital || 0,
+              ).toFixed(2)}`}
+            />
+
+            <HeroStat
+              icon={Crown}
+              label="Commission"
+              value={`${Math.round(
+                (Number(
+                  business.commissionRate,
+                ) || 0.05) * 100,
+              )}%`}
+            />
+
+            <HeroStat
+              icon={Users}
+              label="Team members"
+              value={teamMembers.length}
+            />
+          </div>
+        </div>
+      </motion.section>
+
+      {/* ===================================================== */}
+      {/* BUSINESS INFORMATION                                   */}
+      {/* ===================================================== */}
+
+      <BusinessSection
+        business={business}
+        onSave={saveBusiness}
       />
 
-      <button className="ss-btn ss-btn-outline ss-btn-block-sm" onClick={logout}>Log out</button>
+      {/* ===================================================== */}
+      {/* ACCOUNT SECURITY                                       */}
+      {/* ===================================================== */}
 
-      <DangerZoneSection business={business} account={account} deletionRequest={deletionRequest} setDeletionRequest={setDeletionRequest} />
-    </div>
+      <motion.div variants={sectionVariants}>
+        <AccountSecuritySection
+          account={account}
+        />
+      </motion.div>
+
+      {/* ===================================================== */}
+      {/* TEAM                                                    */}
+      {/* ===================================================== */}
+
+      <motion.div variants={sectionVariants}>
+        <TeamSection
+          teamMembers={teamMembers}
+          setTeamMembers={setTeamMembers}
+          namespace={namespace}
+        />
+      </motion.div>
+
+      {/* ===================================================== */}
+      {/* APPLICATION SETTINGS                                    */}
+      {/* ===================================================== */}
+
+      <motion.div variants={sectionVariants}>
+        <ApplicationSettingsSection
+          business={business}
+          token={token}
+          refreshData={refreshData}
+          appSettings={draftAppSettings}
+          setAppSettings={setDraftAppSettings}
+          account={account}
+        />
+      </motion.div>
+
+      {/* ===================================================== */}
+      {/* SESSION                                                 */}
+      {/* ===================================================== */}
+
+      <motion.section
+        variants={sectionVariants}
+        className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-extrabold text-[#063D35]">
+              Sign out of SparkSales
+            </p>
+
+            <p className="mt-1 text-xs text-slate-400">
+              Your saved business data will remain safely
+              stored in your account.
+            </p>
+          </div>
+
+          <motion.button
+            type="button"
+            whileHover={{
+              y: -1,
+            }}
+            whileTap={{
+              scale: 0.98,
+            }}
+            onClick={logout}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            Log out
+          </motion.button>
+        </div>
+      </motion.section>
+
+      {/* ===================================================== */}
+      {/* DANGER ZONE                                            */}
+      {/* ===================================================== */}
+
+      <motion.div variants={sectionVariants}>
+        <DangerZoneSection
+          business={business}
+          account={account}
+          deletionRequest={deletionRequest}
+          setDeletionRequest={setDeletionRequest}
+        />
+      </motion.div>
+
+      {/* ===================================================== */}
+      {/* STICKY SAVE BAR                                        */}
+      {/* ===================================================== */}
+
+      <AnimatePresence>
+        {appSettingsDirty && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 30,
+              scale: 0.98,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: 30,
+              scale: 0.98,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 22,
+            }}
+            className="fixed inset-x-0 bottom-4 z-40 mx-auto w-[calc(100%-2rem)] max-w-4xl"
+          >
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#B8F2E6] bg-white/95 p-3 shadow-2xl shadow-[#063D35]/15 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+                  <Save size={17} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-extrabold text-[#063D35]">
+                    You have unsaved changes
+                  </p>
+
+                  <p className="text-xs text-slate-400">
+                    Save your SparkSales preferences before
+                    leaving this page.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftAppSettings(
+                      appSettings,
+                    );
+                    setSaveStatus("idle");
+                  }}
+                  className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 sm:flex-none"
+                >
+                  Discard
+                </button>
+
+                <motion.button
+                  type="button"
+                  onClick={saveApplicationSettings}
+                  disabled={saveStatus === "saving"}
+                  whileHover={{
+                    y: -1,
+                  }}
+                  whileTap={{
+                    scale: 0.98,
+                  }}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#063D35] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#052F29] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                >
+                  {saveStatus === "saving" ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={15} />
+                      Save settings
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===================================================== */}
+      {/* SAVE SUCCESS TOAST                                     */}
+      {/* ===================================================== */}
+
+      <AnimatePresence>
+        {saveStatus === "success" && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: -12,
+              scale: 0.96,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: -12,
+              scale: 0.96,
+            }}
+            className="fixed right-4 top-20 z-50"
+          >
+            <div className="flex items-center gap-3 rounded-2xl border border-[#B8F2E6] bg-white px-4 py-3 shadow-xl shadow-[#063D35]/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+                <Check size={17} />
+              </div>
+
+              <div>
+                <p className="text-sm font-extrabold text-[#063D35]">
+                  Settings saved
+                </p>
+
+                <p className="text-xs text-slate-400">
+                  Your preferences have been updated.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
-// Each account gets its own slice of localStorage, keyed by email — without
-// this, every account that ever logs in on the same browser would read and
-// overwrite the same team/app settings.
-function accountNamespace(account) {
-  return (account?.email || "guest").trim().toLowerCase();
-}
+/* ========================================================= */
+/* BUSINESS SECTION                                          */
+/* ========================================================= */
 
-function readSettings(namespace, key, fallback) {
-  try {
-    return JSON.parse(localStorage.getItem(`${SETTINGS_STORAGE_KEY}-${namespace}-${key}`)) ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
+function BusinessSection({
+  business,
+  onSave,
+}) {
+  const [editing, setEditing] =
+    useState(false);
 
-function writeSettings(namespace, key, value) {
-  localStorage.setItem(`${SETTINGS_STORAGE_KEY}-${namespace}-${key}`, JSON.stringify(value));
-}
+  const [form, setForm] = useState(
+    business,
+  );
 
-function BusinessSection({ business, onSave }) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState(business);
-  const [saving, setSaving] = useState(false);
-  const [contactError, setContactError] = useState("");
-  const initials = business.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const [saving, setSaving] =
+    useState(false);
 
-  async function save(e) {
-    e.preventDefault();
+  const [saved, setSaved] =
+    useState(false);
+
+  const [contactError, setContactError] =
+    useState("");
+
+  const initials = businessInitials(
+    business.name,
+  );
+
+  async function save(event) {
+    event.preventDefault();
+
     const contact = form.contact || "";
-    if (contact && !isValidSAPhoneNumber(contact)) {
-      setContactError("Enter a valid South African number — 10 digits, starting with 0 (e.g. 0821234567).");
+
+    if (
+      contact &&
+      !isValidSAPhoneNumber(contact)
+    ) {
+      setContactError(
+        "Enter a valid South African number — 10 digits, starting with 0.",
+      );
       return;
     }
+
     setContactError("");
     setSaving(true);
+    setSaved(false);
+
     try {
       const updated = {
         ...business,
         ...form,
-        startingCapital: Number(form.startingCapital) || 0,
+        startingCapital:
+          Number(form.startingCapital) || 0,
       };
-      onSave(updated);
+
+      await onSave(updated);
+
       setEditing(false);
+      setSaved(true);
+
+      window.setTimeout(() => {
+        setSaved(false);
+      }, 2600);
+    } catch (error) {
+      setContactError(
+        error?.message ||
+          "We couldn't save your business details.",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <>
-      <section className="ss-card ss-profile-card">
-        <div className="ss-profile-top">
-          <div className="ss-profile-avatar">{initials}</div>
-          <div className="ss-profile-info">
-            <h2 className="ss-profile-name">{business.name}</h2>
-            <div className="ss-profile-pills">
-              <span className="ss-pill ss-pill-neutral">{business.category}</span>
-              <span className="ss-pill ss-pill-neutral">Stall {business.stallNumber}</span>
-            </div>
-          </div>
-          {!editing && <button className="ss-btn ss-btn-outline ss-btn-sm" onClick={() => { setForm(business); setContactError(""); setEditing(true); }}>Edit</button>}
-        </div>
-      </section>
+    <motion.section
+      variants={sectionVariants}
+      className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    >
+      <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+            Business profile
+          </p>
 
-      <section className="ss-card">
-        <div className="ss-card-head"><h2>Business information</h2></div>
+          <h2 className="mt-1 text-lg font-extrabold text-[#063D35]">
+            Business information
+          </h2>
+        </div>
+
+        {!editing && (
+          <motion.button
+            id="business-edit-trigger"
+            type="button"
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setForm(business);
+              setContactError("");
+              setSaved(false);
+              setEditing(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-[#063D35] transition hover:bg-[#E6F7F3]"
+          >
+            <Pencil size={15} />
+            Edit details
+          </motion.button>
+        )}
+      </div>
+
+      <div className="p-5 sm:p-6">
         {!editing ? (
-          <div className="ss-settings-grid">
-            <div><span className="ss-stat-label">Name</span><p>{business.name}</p></div>
-            <div><span className="ss-stat-label">Category</span><p>{business.category}</p></div>
-            <div><span className="ss-stat-label">Owner / team lead</span><p>{business.owner || "Not provided"}</p></div>
-            <div><span className="ss-stat-label">Contact</span><p>{business.contact || "Not provided"}</p></div>
-            <div><span className="ss-stat-label">Location</span><p>{business.location || "Not provided"}</p></div>
-            <div><span className="ss-stat-label">Stall / table</span><p>{business.stallNumber}</p></div>
-            <div><span className="ss-stat-label">Starting capital</span><p className="ss-mono">R {Number(business.startingCapital).toFixed(2)}</p></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <InfoItem
+              label="Business name"
+              value={business.name}
+              icon={Building2}
+            />
+
+            <InfoItem
+              label="Category"
+              value={business.category}
+              icon={Sparkles}
+            />
+
+            <InfoItem
+              label="Owner / team lead"
+              value={
+                business.owner ||
+                "Not provided"
+              }
+              icon={Crown}
+            />
+
+            <InfoItem
+              label="Contact"
+              value={
+                business.contact ||
+                "Not provided"
+              }
+              icon={Bell}
+            />
+
+            <InfoItem
+              label="Location"
+              value={
+                business.location ||
+                "Not provided"
+              }
+              icon={MapPin}
+            />
+
+            <InfoItem
+              label="Stall / table"
+              value={
+                business.stallNumber ||
+                "Not provided"
+              }
+              icon={MapPin}
+            />
+
+            <InfoItem
+              label="Starting capital"
+              value={`R ${Number(
+                business.startingCapital || 0,
+              ).toFixed(2)}`}
+              icon={Wallet}
+              highlight
+            />
           </div>
         ) : (
-          <form className="ss-form" onSubmit={save}>
-            <label className="ss-field"><span>Business name</span>
-              <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            </label>
-            <div className="ss-field-row">
-              <label className="ss-field"><span>Owner / team lead</span>
-                <input value={form.owner || ""} onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))} />
-              </label>
-              <label className="ss-field"><span>Contact</span>
-                <input
-                  value={form.contact || ""}
-                  onChange={(e) => setForm((f) => ({ ...f, contact: sanitizeSAPhoneInput(e.target.value) }))}
-                  placeholder="0821234567"
-                  inputMode="numeric"
+          <form
+            className="grid gap-4"
+            onSubmit={save}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Business name"
+                value={form.name || ""}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    name: value,
+                  }))
+                }
+                required
+              />
+
+              <Field
+                label="Owner / team lead"
+                value={form.owner || ""}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    owner: value,
+                  }))
+                }
+              />
+
+              <Field
+                label="Contact"
+                value={form.contact || ""}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    contact:
+                      sanitizeSAPhoneInput(
+                        value,
+                      ),
+                  }))
+                }
+                placeholder="0821234567"
+                inputMode="numeric"
+              />
+
+              <SelectField
+                label="Category"
+                value={form.category || ""}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    category: value,
+                  }))
+                }
+                options={
+                  BUSINESS_CATEGORIES
+                }
+              />
+
+              <Field
+                label="Stall / table no."
+                value={
+                  form.stallNumber || ""
+                }
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    stallNumber: value,
+                  }))
+                }
+              />
+
+              <Field
+                label="Starting capital"
+                type="number"
+                min="0"
+                step="0.01"
+                value={
+                  form.startingCapital ?? ""
+                }
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    startingCapital:
+                      value,
+                  }))
+                }
+              />
+
+              <div className="sm:col-span-2">
+                <Field
+                  label="Location"
+                  value={
+                    form.location || ""
+                  }
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      location: value,
+                    }))
+                  }
+                  placeholder="e.g. Limpopo"
                 />
-                {contactError && <p className="ss-form-error">{contactError}</p>}
-              </label>
+              </div>
             </div>
-            <div className="ss-field-row">
-              <label className="ss-field"><span>Category</span>
-                <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-                  {BUSINESS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </label>
-              <label className="ss-field"><span>Stall / table no.</span>
-                <input value={form.stallNumber || ""} onChange={(e) => setForm((f) => ({ ...f, stallNumber: e.target.value }))} />
-              </label>
-            </div>
-            <label className="ss-field"><span>Starting capital</span>
-              <input type="number" min="0" value={form.startingCapital} onChange={(e) => setForm((f) => ({ ...f, startingCapital: e.target.value }))} />
-            </label>
-            <label className="ss-field"><span>Location</span>
-              <input value={form.location || ""} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
-            </label>
-            <div className="ss-terms-actions" style={{ justifyContent: "flex-start" }}>
-              <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
-              <button type="button" className="ss-btn ss-btn-outline" onClick={() => setEditing(false)}>Cancel</button>
+
+            <AnimatePresence>
+              {contactError && (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                    y: -5,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                    y: -5,
+                  }}
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+                >
+                  {contactError}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(business);
+                  setContactError("");
+                  setEditing(false);
+                }}
+                disabled={saving}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <motion.button
+                type="submit"
+                disabled={saving}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#063D35] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#052F29] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={15} />
+                    Save business
+                  </>
+                )}
+              </motion.button>
             </div>
           </form>
         )}
-      </section>
-    </>
+
+        <AnimatePresence>
+          {saved && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                y: -8,
+              }}
+              className="mt-4 flex items-center gap-2 rounded-xl bg-[#E6F7F3] px-4 py-3 text-sm font-bold text-[#063D35]"
+            >
+              <Check size={15} />
+              Business details saved successfully.
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.section>
   );
 }
 
-function AccountSecuritySection({ account }) {
-  const accountDetails = account || { fullName: "Account owner", email: "" };
+/* ========================================================= */
+/* ACCOUNT SECURITY                                          */
+/* ========================================================= */
+
+function AccountSecuritySection({
+  account,
+}) {
+  const accountDetails = account || {
+    fullName: "Account owner",
+    email: "",
+  };
 
   return (
-    <section className="ss-card">
-      <div className="ss-card-head"><h2>Account &amp; security</h2></div>
-      <div className="ss-settings-grid" style={{ marginBottom: 20 }}>
-        <div><span className="ss-stat-label">Name</span><p>{accountDetails.fullName}</p></div>
-        <div><span className="ss-stat-label">Email</span><p>{accountDetails.email || "Not available"}</p></div>
+    <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+          Security
+        </p>
+
+        <h2 className="mt-1 text-lg font-extrabold text-[#063D35]">
+          Account & security
+        </h2>
       </div>
 
-      <ChangePasswordForm />
+      <div className="p-5 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <InfoItem
+            label="Account name"
+            value={accountDetails.fullName}
+            icon={Users}
+          />
 
-      {/* Google/Apple account connections aren't built yet — re-add once
-          Sign in with Apple/Google is actually wired up on the backend. */}
+          <InfoItem
+            label="Email address"
+            value={
+              accountDetails.email ||
+              "Not available"
+            }
+            icon={Mail}
+          />
+        </div>
+
+        <ChangePasswordForm />
+      </div>
     </section>
   );
 }
 
-function ChangePasswordForm() {
-  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
-  const [status, setStatus] = useState(""); // "", "saving", "success", "error"
-  const [error, setError] = useState("");
-  const tooShort = form.next.length > 0 && form.next.length < 6;
-  const mismatch = form.confirm.length > 0 && form.next !== form.confirm;
-  const canSubmit = form.current && form.next.length >= 6 && form.next === form.confirm;
+/* ========================================================= */
+/* PASSWORD                                                 */
+/* ========================================================= */
 
-  async function submit(e) {
-    e.preventDefault();
-    if (!canSubmit) return;
+function ChangePasswordForm() {
+  const [form, setForm] = useState({
+    current: "",
+    next: "",
+    confirm: "",
+  });
+
+  const [status, setStatus] =
+    useState("idle");
+
+  const [error, setError] =
+    useState("");
+
+  const [showCurrent, setShowCurrent] =
+    useState(false);
+
+  const [showNext, setShowNext] =
+    useState(false);
+
+  const [showConfirm, setShowConfirm] =
+    useState(false);
+
+  const tooShort =
+    form.next.length > 0 &&
+    form.next.length < 6;
+
+  const mismatch =
+    form.confirm.length > 0 &&
+    form.next !== form.confirm;
+
+  const canSubmit =
+    form.current &&
+    form.next.length >= 6 &&
+    form.next === form.confirm;
+
+  async function submit(event) {
+    event.preventDefault();
+
+    if (!canSubmit) {
+      return;
+    }
+
     setStatus("saving");
     setError("");
+
     try {
-      await api.changePassword({ currentPassword: form.current, newPassword: form.next });
-      setForm({ current: "", next: "", confirm: "" });
+      await api.changePassword({
+        currentPassword:
+          form.current,
+        newPassword: form.next,
+      });
+
+      setForm({
+        current: "",
+        next: "",
+        confirm: "",
+      });
+
       setStatus("success");
-      setTimeout(() => setStatus(""), 3000);
+
+      window.setTimeout(() => {
+        setStatus("idle");
+      }, 3200);
     } catch (err) {
-      setError(err.message || "Couldn't update your password.");
+      setError(
+        err?.message ||
+          "Couldn't update your password.",
+      );
+
       setStatus("error");
     }
   }
 
   return (
-    <form className="ss-form" onSubmit={submit} style={{ marginBottom: 22 }}>
-      <div className="ss-connected-head" style={{ marginBottom: 4 }}>Change password</div>
-      <label className="ss-field"><span>Current password</span>
-        <input type="password" placeholder="••••••••" value={form.current} onChange={(e) => setForm((f) => ({ ...f, current: e.target.value }))} />
-      </label>
-      <div className="ss-field-row">
-        <label className="ss-field"><span>New password</span>
-          <input type="password" placeholder="At least 6 characters" value={form.next} onChange={(e) => setForm((f) => ({ ...f, next: e.target.value }))} />
-        </label>
-        <label className="ss-field"><span>Confirm new password</span>
-          <input type="password" placeholder="Repeat password" value={form.confirm} onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))} />
-        </label>
+    <form
+      className="mt-6 border-t border-slate-100 pt-6"
+      onSubmit={submit}
+    >
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+          <ShieldCheck size={17} />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-extrabold text-[#063D35]">
+            Change password
+          </h3>
+
+          <p className="text-xs text-slate-400">
+            Keep your SparkSales account secure.
+          </p>
+        </div>
       </div>
-      {tooShort && <p className="ss-form-error">Password must be at least 6 characters.</p>}
-      {mismatch && <p className="ss-form-error">Passwords don't match.</p>}
-      {status === "error" && <p className="ss-form-error">{error}</p>}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button type="submit" className="ss-btn ss-btn-outline ss-btn-sm" disabled={!canSubmit || status === "saving"}>
-          {status === "saving" ? "Updating…" : "Update password"}
-        </button>
-        {status === "success" && <span className="ss-success-text">Password updated</span>}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PasswordField
+          label="Current password"
+          value={form.current}
+          onChange={(value) =>
+            setForm((current) => ({
+              ...current,
+              current: value,
+            }))
+          }
+          visible={showCurrent}
+          setVisible={
+            setShowCurrent
+          }
+        />
+
+        <PasswordField
+          label="New password"
+          value={form.next}
+          onChange={(value) =>
+            setForm((current) => ({
+              ...current,
+              next: value,
+            }))
+          }
+          visible={showNext}
+          setVisible={setShowNext}
+          placeholder="At least 6 characters"
+        />
+
+        <div className="sm:col-span-2">
+          <PasswordField
+            label="Confirm new password"
+            value={form.confirm}
+            onChange={(value) =>
+              setForm((current) => ({
+                ...current,
+                confirm: value,
+              }))
+            }
+            visible={showConfirm}
+            setVisible={
+              setShowConfirm
+            }
+            placeholder="Repeat password"
+          />
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {(tooShort || mismatch || error) && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: -5,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              y: -5,
+            }}
+            className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+          >
+            {tooShort
+              ? "Password must be at least 6 characters."
+              : mismatch
+                ? "Passwords don't match."
+                : error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <motion.button
+          type="submit"
+          disabled={
+            !canSubmit ||
+            status === "saving"
+          }
+          whileHover={{
+            y: -1,
+          }}
+          whileTap={{
+            scale: 0.98,
+          }}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#063D35] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#052F29] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {status === "saving" ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Updating...
+            </>
+          ) : (
+            <>
+              <ShieldCheck size={15} />
+              Update password
+            </>
+          )}
+        </motion.button>
+
+        <AnimatePresence>
+          {status === "success" && (
+            <motion.span
+              initial={{
+                opacity: 0,
+                x: -8,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              exit={{
+                opacity: 0,
+                x: -8,
+              }}
+              className="inline-flex items-center gap-2 text-sm font-bold text-[#0C9A73]"
+            >
+              <Check size={15} />
+              Password updated
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
     </form>
   );
 }
 
-function TeamSection({ teamMembers, setTeamMembers, namespace }) {
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("Member");
+/* ========================================================= */
+/* TEAM                                                      */
+/* ========================================================= */
 
-  async function addMember(e) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    const member = { teamMemberId: crypto.randomUUID(), name: name.trim(), role };
-    setTeamMembers((m) => {
-      const next = [...m, member];
-      writeSettings(namespace, "team", next);
+function TeamSection({
+  teamMembers,
+  setTeamMembers,
+  namespace,
+}) {
+  const [adding, setAdding] =
+    useState(false);
+
+  const [name, setName] =
+    useState("");
+
+  const [role, setRole] =
+    useState("Member");
+
+  const [removingId, setRemovingId] =
+    useState(null);
+
+  function addMember(event) {
+    event.preventDefault();
+
+    if (!name.trim()) {
+      return;
+    }
+
+    const member = {
+      teamMemberId:
+        crypto.randomUUID(),
+      name: name.trim(),
+      role,
+    };
+
+    setTeamMembers((members) => {
+      const next = [
+        ...members,
+        member,
+      ];
+
+      writeSettings(
+        namespace,
+        "team",
+        next,
+      );
+
       return next;
     });
-    setName(""); setRole("Member"); setAdding(false);
+
+    setName("");
+    setRole("Member");
+    setAdding(false);
   }
 
-  async function removeMember(id) {
-    setTeamMembers((m) => {
-      const next = m.filter((x) => x.teamMemberId !== id);
-      writeSettings(namespace, "team", next);
-      return next;
-    });
+  function removeMember(id) {
+    setRemovingId(id);
+
+    window.setTimeout(() => {
+      setTeamMembers((members) => {
+        const next = members.filter(
+          (member) =>
+            member.teamMemberId !== id,
+        );
+
+        writeSettings(
+          namespace,
+          "team",
+          next,
+        );
+
+        return next;
+      });
+
+      setRemovingId(null);
+    }, 180);
   }
 
   return (
-    <section className="ss-card">
-      <div className="ss-card-head">
-        <h2>Team members</h2>
-        <button className="ss-btn ss-btn-outline ss-btn-sm" onClick={() => setAdding((v) => !v)}>Add member</button>
+    <motion.section
+      variants={sectionVariants}
+      className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    >
+      <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+            <Users size={17} />
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+              Collaboration
+            </p>
+
+            <h2 className="mt-1 text-lg font-extrabold text-[#063D35]">
+              Team members
+            </h2>
+          </div>
+        </div>
+
+        <motion.button
+          type="button"
+          whileHover={{
+            y: -1,
+          }}
+          whileTap={{
+            scale: 0.98,
+          }}
+          onClick={() =>
+            setAdding((current) => !current)
+          }
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-[#063D35] transition hover:bg-[#E6F7F3]"
+        >
+          {adding ? (
+            <>
+              <X size={15} />
+              Close
+            </>
+          ) : (
+            <>
+              <UserPlus size={15} />
+              Add member
+            </>
+          )}
+        </motion.button>
       </div>
 
-      {adding && (
-        <form className="ss-form" onSubmit={addMember} style={{ marginBottom: 16 }}>
-          <label className="ss-field"><span>Name</span>
-            <input required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Team Members Name" />
-          </label>
-          <label className="ss-field"><span>Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option>Owner</option><option>Manager</option><option>Cashier</option><option>Member</option>
-            </select>
-          </label>
-          <button type="submit" className="ss-btn ss-btn-primary">Add</button>
-        </form>
-      )}
+      <div className="p-5 sm:p-6">
+        <AnimatePresence initial={false}>
+          {adding && (
+            <motion.form
+              initial={{
+                opacity: 0,
+                height: 0,
+                y: -8,
+              }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+                y: -8,
+              }}
+              className="mb-5 overflow-hidden rounded-2xl border border-[#B8F2E6] bg-[#F7FAF9] p-4"
+              onSubmit={addMember}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Member name"
+                  value={name}
+                  onChange={setName}
+                  placeholder="e.g. Amara"
+                  autoFocus
+                  required
+                />
 
-      {teamMembers.length === 0 ? (
-        <p className="ss-sub">No team members added yet.</p>
-      ) : (
-        <ul className="ss-team-list">
-          {teamMembers.map((m) => (
-            <li key={m.teamMemberId} className="ss-team-row">
-              <div className="ss-team-info">
-                <span className="ss-team-name">{m.name}</span>
-                <span className="ss-team-role">{m.role}</span>
+                <SelectField
+                  label="Role"
+                  value={role}
+                  onChange={setRole}
+                  options={[
+                    "Owner",
+                    "Manager",
+                    "Cashier",
+                    "Member",
+                  ]}
+                />
               </div>
-              <button className="ss-icon-btn" onClick={() => removeMember(m.teamMemberId)}>Remove</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#063D35] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#052F29]"
+                >
+                  <Plus size={15} />
+                  Add member
+                </button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {teamMembers.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#063D35] shadow-sm">
+              <Users size={19} />
+            </div>
+
+            <h3 className="mt-4 text-sm font-extrabold text-slate-800">
+              No team members yet
+            </h3>
+
+            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-400">
+              Add your team so everyone involved in
+              the trading day is easy to identify.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            <AnimatePresence initial={false}>
+              {teamMembers.map((member) => (
+                <motion.div
+                  key={member.teamMemberId}
+                  initial={{
+                    opacity: 0,
+                    y: 8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    x: -16,
+                    height: 0,
+                    marginBottom: 0,
+                  }}
+                  transition={{
+                    duration: 0.22,
+                  }}
+                  className={`flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 transition hover:border-[#B8F2E6] hover:bg-[#F7FAF9] ${
+                    removingId ===
+                    member.teamMemberId
+                      ? "opacity-50"
+                      : ""
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-black text-[#063D35] shadow-sm">
+                      {member.name
+                        .split(" ")
+                        .map(
+                          (word) =>
+                            word[0],
+                        )
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-extrabold text-slate-800">
+                        {member.name}
+                      </p>
+
+                      <span className="mt-1 inline-flex rounded-full bg-[#E6F7F3] px-2 py-1 text-[10px] font-bold text-[#063D35]">
+                        {member.role}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeMember(
+                        member.teamMemberId,
+                      )
+                    }
+                    className="rounded-lg px-3 py-2 text-xs font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                  >
+                    Remove
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </motion.section>
   );
 }
 
-function ApplicationSettingsSection({ business, setBusiness, appSettings, setAppSettings, account }) {
-  const accountDetails = account || { email: "" };
-  const [rateInput, setRateInput] = useState(String(Math.max(
-    MIN_COMMISSION_PERCENT,
-    Math.round((Number(business.commissionRate) || 0.05) * 100)
-  )));
+/* ========================================================= */
+/* APPLICATION SETTINGS                                       */
+/* ========================================================= */
+
+function ApplicationSettingsSection({
+  business,
+  token,
+  refreshData,
+  appSettings,
+  setAppSettings,
+  account,
+}) {
+  const accountDetails = account || {
+    email: "",
+  };
+
+  const [rateInput, setRateInput] =
+    useState(
+      String(
+        Math.max(
+          MIN_COMMISSION_PERCENT,
+          Math.round(
+            (Number(
+              business.commissionRate,
+            ) || 0.05) * 100,
+          ),
+        ),
+      ),
+    );
+
+  const [rateSaving, setRateSaving] =
+    useState(false);
+
+  const [rateSaved, setRateSaved] =
+    useState(false);
+
+  const [rateError, setRateError] =
+    useState("");
 
   async function saveRate() {
-    const rate = Math.min(
-      Math.max(Number(rateInput) || MIN_COMMISSION_PERCENT, MIN_COMMISSION_PERCENT),
-      100
-    ) / 100;
-    setRateInput(String(Math.round(rate * 100)));
-    setBusiness((b) => ({ ...b, commissionRate: rate }));
+    const parsed =
+      Number(rateInput) ||
+      MIN_COMMISSION_PERCENT;
+
+    const clamped = Math.min(
+      Math.max(
+        parsed,
+        MIN_COMMISSION_PERCENT,
+      ),
+      100,
+    );
+
+    const rate = clamped / 100;
+
+    setRateInput(
+      String(Math.round(rate * 100)),
+    );
+
+    setRateSaving(true);
+    setRateSaved(false);
+    setRateError("");
+
+    try {
+      if (!token) {
+        throw new Error("You must be logged in.");
+      }
+
+      setAuthToken(token);
+
+      await apiRequest(
+        "/api/business/commission-rate",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            commissionRate: rate,
+          }),
+        },
+      );
+
+      await refreshData();
+
+      setRateSaved(true);
+
+      window.setTimeout(() => {
+        setRateSaved(false);
+      }, 2600);
+    } catch (error) {
+      console.error(
+        "Failed to save commission rate:",
+        error,
+      );
+
+      setRateError(
+        error?.message ||
+          "We couldn't save the commission rate.",
+      );
+    } finally {
+      setRateSaving(false);
+    }
   }
 
-  async function saveSettings(next) {
-    writeSettings(accountNamespace(account), "app", next);
-    setAppSettings(next);
+  function updateSetting(key, value) {
+    setAppSettings((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
   return (
-    <section className="ss-card">
-      <div className="ss-card-head"><h2>Application settings</h2></div>
-      <div className="ss-rate-row" style={{ marginBottom: 18 }}>
-        <label className="ss-field ss-field-inline">
-          <span>Commission rate</span>
-          <div className="ss-rate-input">
-            <input type="number" min={MIN_COMMISSION_PERCENT} max="100" value={rateInput} onChange={(e) => setRateInput(e.target.value)} onBlur={saveRate} />
-            <span>%</span>
+    <motion.section
+      variants={sectionVariants}
+      className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    >
+      <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
+              <Bell size={17} />
+            </div>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Preferences
+              </p>
+
+              <h2 className="mt-1 text-lg font-extrabold text-[#063D35]">
+                Application settings
+              </h2>
+            </div>
           </div>
-        </label>
+
+          <span className="hidden rounded-full bg-[#E6F7F3] px-3 py-1.5 text-[11px] font-bold text-[#063D35] sm:block">
+            Your preferences
+          </span>
+        </div>
       </div>
 
-      <label className="ss-field-inline" style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}>
-        <span className="ss-setting-title">Daily summary email</span>
-        <input
-          type="checkbox" checked={appSettings.dailySummaryEmail}
-          onChange={(e) => saveSettings({ ...appSettings, dailySummaryEmail: e.target.checked })}
-        />
-      </label>
-      {appSettings.dailySummaryEmail && (
-        <label className="ss-field" style={{ margin: "0 0 14px" }}>
-          <span>Send summaries to</span>
-            <input
-            type="email" placeholder={accountDetails.email} value={appSettings.notificationEmail || ""}
-            onChange={(e) => saveSettings({ ...appSettings, notificationEmail: e.target.value })}
-          />
-        </label>
-      )}
+      <div className="divide-y divide-slate-100">
+        {/* Commission */}
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-extrabold text-slate-800">
+                Commission rate
+              </p>
 
-      <label className="ss-field-inline" style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}>
-        <span className="ss-setting-title">Loss alerts</span>
-        <input
-          type="checkbox" checked={appSettings.lossAlerts}
-          onChange={(e) => saveSettings({ ...appSettings, lossAlerts: e.target.checked })}
-        />
-      </label>
-    </section>
+              <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">
+                SparkSales commission is applied to positive
+                gross profit. Your current business rate is
+                configurable here.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-end">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Rate
+                <div className="relative mt-1.5">
+                  <input
+                    type="number"
+                    min={
+                      MIN_COMMISSION_PERCENT
+                    }
+                    max="100"
+                    value={rateInput}
+                    onChange={(event) =>
+                      setRateInput(
+                        event.target.value,
+                      )
+                    }
+                    className="w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm font-bold text-slate-800 outline-none transition focus:border-[#7FCFC0] focus:bg-white focus:ring-4 focus:ring-[#7FCFC0]/10"
+                  />
+
+                  <span className="pointer-events-none absolute right-3 top-3 text-sm font-bold text-slate-400">
+                    %
+                  </span>
+                </div>
+              </label>
+
+              <motion.button
+                type="button"
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={rateSaving}
+                onClick={saveRate}
+                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-[#063D35] px-4 text-sm font-bold text-white transition hover:bg-[#052F29] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {rateSaving ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={15} />
+                    Save rate
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {rateError && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
+              >
+                {rateError}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {rateSaved && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#E6F7F3] px-3 py-2 text-xs font-bold text-[#063D35]"
+              >
+                <Check size={14} />
+                Commission rate saved.
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Daily summaries */}
+        <div className="p-5 sm:p-6">
+          <SettingToggle
+            icon={Mail}
+            title="Daily summary email"
+            description="Receive a daily snapshot of your trading performance."
+            checked={
+              appSettings.dailySummaryEmail
+            }
+            onChange={(checked) =>
+              updateSetting(
+                "dailySummaryEmail",
+                checked,
+              )
+            }
+          />
+
+          <AnimatePresence initial={false}>
+            {appSettings.dailySummaryEmail && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  height: 0,
+                  y: -6,
+                }}
+                animate={{
+                  opacity: 1,
+                  height: "auto",
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  height: 0,
+                  y: -6,
+                }}
+                className="mt-4 overflow-hidden"
+              >
+                <Field
+                  label="Send summaries to"
+                  type="email"
+                  value={
+                    appSettings.notificationEmail ||
+                    ""
+                  }
+                  onChange={(value) =>
+                    updateSetting(
+                      "notificationEmail",
+                      value,
+                    )
+                  }
+                  placeholder={
+                    accountDetails.email ||
+                    "your@email.com"
+                  }
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Loss alerts */}
+        <div className="p-5 sm:p-6">
+          <SettingToggle
+            icon={AlertTriangle}
+            title="Loss alerts"
+            description="Get notified when your business moves into negative gross profit."
+            checked={
+              appSettings.lossAlerts
+            }
+            onChange={(checked) =>
+              updateSetting(
+                "lossAlerts",
+                checked,
+              )
+            }
+            danger
+          />
+        </div>
+
+        {/* Save helper */}
+        <div className="bg-[#F7FAF9] px-5 py-4 sm:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#063D35] shadow-sm">
+              <Clock3 size={16} />
+            </div>
+
+            <div>
+              <p className="text-xs font-extrabold text-[#063D35]">
+                Changes are staged until you save
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                Update the preferences above, then use the
+                floating <strong>Save settings</strong>{" "}
+                button to commit them.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.section>
   );
 }
 
-function DangerZoneSection({ business, account, deletionRequest, setDeletionRequest }) {
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [confirmText, setConfirmText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const canRequest = confirmText.trim().toLowerCase() === business.name.trim().toLowerCase();
+/* ========================================================= */
+/* DANGER ZONE                                                */
+/* ========================================================= */
+
+function DangerZoneSection({
+  business,
+  account,
+  deletionRequest,
+  setDeletionRequest,
+}) {
+  const [open, setOpen] =
+    useState(false);
+
+  const [reason, setReason] =
+    useState("");
+
+  const [confirmText, setConfirmText] =
+    useState("");
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const canRequest =
+    confirmText.trim().toLowerCase() ===
+    business.name.trim().toLowerCase();
 
   async function submitRequest() {
     if (!account?.email) {
-      setError("You need to be signed in to request removal.");
+      setError(
+        "You need to be signed in to request removal.",
+      );
       return;
     }
+
     setSubmitting(true);
     setError("");
+
     try {
-      const req = await api.requestDeletion(account.email, business.name, reason);
-      setDeletionRequest(req);
+      const request =
+        await api.requestDeletion(
+          account.email,
+          business.name,
+          reason,
+        );
+
+      setDeletionRequest(request);
       setOpen(false);
+      setReason("");
+      setConfirmText("");
     } catch (err) {
-      setError(err.message || "Couldn't submit the removal request. Please try again.");
+      setError(
+        err?.message ||
+          "Couldn't submit the removal request. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   async function cancelRequest() {
+    if (!deletionRequest?.id) {
+      return;
+    }
+
     setSubmitting(true);
     setError("");
+
     try {
-      await api.cancelDeletion(deletionRequest.id);
+      await api.cancelDeletion(
+        deletionRequest.id,
+      );
+
       setDeletionRequest(null);
     } catch (err) {
-      setError(err.message || "Couldn't cancel the removal request. Please try again.");
+      setError(
+        err?.message ||
+          "Couldn't cancel the removal request. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <section className="ss-card ss-danger-card">
-      <div className="ss-card-head"><h2>Delete account</h2></div>
-      {error && <p className="ss-form-error" style={{ marginBottom: 12 }}>{error}</p>}
-      {deletionRequest ? (
-        <>
-          <p className="ss-sub" style={{ marginBottom: 14 }}>
-            Removal requested on {new Date(deletionRequest.requestedAt).toLocaleDateString()}.
-            You'll get a confirmation email once {business.name} has been permanently removed.
-          </p>
-          <button className="ss-btn ss-btn-outline" disabled={submitting} onClick={cancelRequest}>
-            {submitting ? "Cancelling…" : "Cancel request"}
-          </button>
-        </>
-      ) : open ? (
-        <div>
-          <label className="ss-field"><span>Reason (optional)</span>
-            <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Event has ended" />
-          </label>
-          <label className="ss-field" style={{ marginTop: 12 }}>
-            <span>Type <strong className="ss-mono">{business.name}</strong> to confirm</span>
-            <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={business.name} />
-          </label>
-          <div className="ss-terms-actions" style={{ marginTop: 14 }}>
-            <button className="ss-btn ss-btn-outline" disabled={submitting} onClick={() => setOpen(false)}>Cancel</button>
-            <button className="ss-btn ss-btn-danger" disabled={!canRequest || submitting} onClick={submitRequest}>
-              {submitting ? "Submitting…" : "Request removal"}
-            </button>
+    <motion.section
+      variants={sectionVariants}
+      className="mt-4 overflow-hidden rounded-2xl border border-red-200 bg-red-50/50 shadow-sm"
+    >
+      <div className="border-b border-red-100 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-500">
+            <AlertTriangle size={17} />
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-400">
+              Advanced
+            </p>
+
+            <h2 className="mt-1 text-lg font-extrabold text-red-700">
+              Danger zone
+            </h2>
           </div>
         </div>
-      ) : (
-        <>
-          <p className="ss-sub" style={{ marginBottom: 14 }}>
-            Requesting removal notifies the SparkSales team to permanently delete {business.name} and all its data.
+      </div>
+
+      <div className="p-5 sm:p-6">
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-medium text-red-600">
+            {error}
+          </div>
+        )}
+
+        {deletionRequest ? (
+          <div>
+            <div className="rounded-2xl border border-red-100 bg-white p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                  <Clock3 size={17} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-extrabold text-slate-800">
+                    Removal request submitted
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Requested on{" "}
+                    {new Date(
+                      deletionRequest.requestedAt,
+                    ).toLocaleDateString()}
+                    . You'll receive confirmation once{" "}
+                    {business.name} has been permanently
+                    removed.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={cancelRequest}
+              className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {submitting
+                ? "Cancelling..."
+                : "Cancel request"}
+            </button>
+          </div>
+        ) : open ? (
+          <AnimatePresence initial>
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="rounded-2xl border border-red-100 bg-white p-4 sm:p-5"
+            >
+              <div className="grid gap-4">
+                <Field
+                  label="Reason (optional)"
+                  value={reason}
+                  onChange={setReason}
+                  placeholder="e.g. Event has ended"
+                />
+
+                <div>
+                  <Field
+                    label={
+                      <>
+                        Type{" "}
+                        <strong>
+                          {business.name}
+                        </strong>{" "}
+                        to confirm
+                      </>
+                    }
+                    value={confirmText}
+                    onChange={setConfirmText}
+                    placeholder={
+                      business.name
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => {
+                    setOpen(false);
+                    setConfirmText("");
+                    setReason("");
+                  }}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    !canRequest ||
+                    submitting
+                  }
+                  onClick={submitRequest}
+                  className="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting
+                    ? "Submitting..."
+                    : "Request removal"}
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-extrabold text-slate-800">
+                Delete account
+              </p>
+
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                Requesting removal notifies the SparkSales
+                team to permanently delete{" "}
+                <strong>{business.name}</strong> and
+                its associated data.
+              </p>
+            </div>
+
+            <motion.button
+              type="button"
+              whileHover={{
+                y: -1,
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              onClick={() => {
+                setError("");
+                setOpen(true);
+              }}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"
+            >
+              <Trash2 size={15} />
+              Request account deletion
+            </motion.button>
+          </div>
+        )}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ========================================================= */
+/* SMALL COMPONENTS                                           */
+/* ========================================================= */
+
+function HeroStat({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="flex items-center gap-2">
+        <Icon
+          size={14}
+          className="text-[#B8F2E6]"
+        />
+
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          {label}
+        </span>
+      </div>
+
+      <p className="mt-2 truncate text-sm font-extrabold text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function InfoItem({
+  label,
+  value,
+  icon: Icon,
+  highlight = false,
+}) {
+  return (
+    <div className="group rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition hover:border-[#B8F2E6] hover:bg-[#F7FAF9]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#063D35] shadow-sm transition group-hover:scale-105">
+          <Icon size={15} />
+        </div>
+
+        <div className="min-w-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            {label}
+          </span>
+
+          <p
+            className={`mt-1 truncate text-sm font-extrabold ${
+              highlight
+                ? "text-[#0C9A73]"
+                : "text-slate-800"
+            }`}
+          >
+            {value}
           </p>
-          <button className="ss-btn ss-btn-danger" onClick={() => { setError(""); setOpen(true); }}>Request account deletion</button>
-        </>
-      )}
-    </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+  ...props
+}) {
+  return (
+    <label className="block text-sm font-bold text-slate-700">
+      {label}
+
+      <input
+        {...props}
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
+      />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}) {
+  return (
+    <label className="block text-sm font-bold text-slate-700">
+      {label}
+
+      <div className="relative mt-1.5">
+        <select
+          value={value}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
+          className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm font-medium text-slate-800 outline-none transition focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
+        >
+          {options.map((option) => (
+            <option
+              key={option}
+              value={option}
+            >
+              {option}
+            </option>
+          ))}
+        </select>
+
+        <ChevronDown
+          size={15}
+          className="pointer-events-none absolute right-3 top-3 text-slate-400"
+        />
+      </div>
+    </label>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+  visible,
+  setVisible,
+  placeholder,
+}) {
+  return (
+    <label className="block text-sm font-bold text-slate-700">
+      {label}
+
+      <div className="relative mt-1.5">
+        <input
+          type={
+            visible ? "text" : "password"
+          }
+          value={value}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
+          placeholder={placeholder}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-11 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
+        />
+
+        <button
+          type="button"
+          onClick={() =>
+            setVisible(
+              (current) => !current,
+            )
+          }
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          aria-label={
+            visible
+              ? `Hide ${label}`
+              : `Show ${label}`
+          }
+        >
+          {visible ? (
+            <EyeOff size={16} />
+          ) : (
+            <Eye size={16} />
+          )}
+        </button>
+      </div>
+    </label>
+  );
+}
+
+function SettingToggle({
+  icon: Icon,
+  title,
+  description,
+  checked,
+  onChange,
+  danger = false,
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+            danger
+              ? "bg-red-50 text-red-500"
+              : "bg-[#E6F7F3] text-[#063D35]"
+          }`}
+        >
+          <Icon size={17} />
+        </div>
+
+        <div>
+          <p className="text-sm font-extrabold text-slate-800">
+            {title}
+          </p>
+
+          <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() =>
+          onChange(!checked)
+        }
+        className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+          checked
+            ? "bg-[#063D35]"
+            : "bg-slate-200"
+        }`}
+      >
+        <motion.span
+          animate={{
+            x: checked ? 20 : 2,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+          }}
+          className="absolute left-0 top-0.5 h-6 w-6 rounded-full bg-white shadow-sm"
+        />
+      </button>
+    </div>
+  );
+}
+
+/* ========================================================= */
+/* HELPERS                                                    */
+/* ========================================================= */
+
+function businessInitials(name) {
+  return (
+    String(name || "")
+      .split(" ")
+      .map((word) => word[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "SS"
+  );
+}
+
+function accountNamespace(account) {
+  return (
+    account?.email ||
+    "guest"
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function readSettings(
+  namespace,
+  key,
+  fallback,
+) {
+  try {
+    return (
+      JSON.parse(
+        localStorage.getItem(
+          `${SETTINGS_STORAGE_KEY}-${namespace}-${key}`,
+        ),
+      ) ?? fallback
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+function writeSettings(
+  namespace,
+  key,
+  value,
+) {
+  localStorage.setItem(
+    `${SETTINGS_STORAGE_KEY}-${namespace}-${key}`,
+    JSON.stringify(value),
   );
 }
