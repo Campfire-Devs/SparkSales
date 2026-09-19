@@ -1,7 +1,4 @@
-import {
-  AnimatePresence,
-  motion,
-} from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   Bell,
@@ -28,14 +25,8 @@ import {
 import { useState } from "react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/apiClient";
-import {
-  apiRequest,
-  setAuthToken,
-} from "../api/client";
-import {
-  getSettings,
-  updateSettings,
-} from "../api/settingsApi";
+import { apiRequest, setAuthToken } from "../api/client";
+import { getSettings, updateSettings } from "../api/settingsApi";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
 import {
@@ -101,14 +92,11 @@ useEffect(() => {
       const response = await getSettings();
 
       const nextSettings = {
-        dailySummaryEmail:
-          Boolean(response?.dailySummaryEmail),
+        dailySummaryEmail: Boolean(response?.dailySummaryEmail),
 
-        notificationEmail:
-          response?.notificationEmail || "",
+        notificationEmail: response?.notificationEmail || "",
 
-        lossAlerts:
-          Boolean(response?.lossAlerts),
+        lossAlerts: Boolean(response?.lossAlerts),
       };
 
       if (!active) {
@@ -122,14 +110,10 @@ useEffect(() => {
         return;
       }
 
-      console.error(
-        "Failed to load application settings:",
-        error,
-      );
+      console.error("Failed to load application settings:", error);
 
       setSettingsError(
-        error?.message ||
-          "Unable to load your application settings.",
+        error?.message || "Unable to load your application settings.",
       );
     } finally {
       if (active) {
@@ -160,27 +144,20 @@ export default function SettingsPage() {
     readSettings(namespace, "team", []),
   );
 
-  const [appSettings, setAppSettings] =
-  useState(APP_DEFAULTS);
+  const [appSettings, setAppSettings] = useState(APP_DEFAULTS);
 
-const [settingsLoading, setSettingsLoading] =
-  useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
-const [settingsError, setSettingsError] =
-  useState("");
+  const [settingsError, setSettingsError] = useState("");
 
-  const [draftAppSettings, setDraftAppSettings] =
-    useState(appSettings);
+  const [draftAppSettings, setDraftAppSettings] = useState(appSettings);
 
   const appSettingsDirty =
-    JSON.stringify(appSettings) !==
-    JSON.stringify(draftAppSettings);
+    JSON.stringify(appSettings) !== JSON.stringify(draftAppSettings);
 
-  const [saveStatus, setSaveStatus] =
-    useState("idle");
+  const [saveStatus, setSaveStatus] = useState("idle");
 
-  const [deletionRequest, setDeletionRequest] =
-    useState(null);
+  const [deletionRequest, setDeletionRequest] = useState(null);
 
   if (!business) {
     return (
@@ -199,62 +176,51 @@ const [settingsError, setSettingsError] =
   }
 
   async function saveApplicationSettings() {
-  if (!token) {
-    setSaveStatus("error");
-    return;
+    if (!token) {
+      setSaveStatus("error");
+      return;
+    }
+
+    setSaveStatus("saving");
+    setSettingsError("");
+
+    try {
+      setAuthToken(token);
+
+      const response = await updateSettings({
+        dailySummaryEmail: Boolean(draftAppSettings.dailySummaryEmail),
+
+        notificationEmail: draftAppSettings.notificationEmail?.trim() || null,
+
+        lossAlerts: Boolean(draftAppSettings.lossAlerts),
+      });
+
+      const savedSettings = {
+        dailySummaryEmail: Boolean(response?.dailySummaryEmail),
+
+        notificationEmail: response?.notificationEmail || "",
+
+        lossAlerts: Boolean(response?.lossAlerts),
+      };
+
+      setAppSettings(savedSettings);
+      setDraftAppSettings(savedSettings);
+
+      setSaveStatus("success");
+
+      window.setTimeout(() => {
+        setSaveStatus("idle");
+      }, 2600);
+    } catch (error) {
+      console.error("Failed to save application settings:", error);
+
+      setSettingsError(
+        error?.message || "We couldn't save your application settings.",
+      );
+
+      setSaveStatus("error");
+    }
   }
-
-  setSaveStatus("saving");
-  setSettingsError("");
-
-  try {
-    setAuthToken(token);
-
-    const response = await updateSettings({
-      dailySummaryEmail:
-        Boolean(draftAppSettings.dailySummaryEmail),
-
-      notificationEmail:
-        draftAppSettings.notificationEmail?.trim() ||
-        null,
-
-      lossAlerts:
-        Boolean(draftAppSettings.lossAlerts),
-    });
-
-    const savedSettings = {
-      dailySummaryEmail:
-        Boolean(response?.dailySummaryEmail),
-
-      notificationEmail:
-        response?.notificationEmail || "",
-
-      lossAlerts:
-        Boolean(response?.lossAlerts),
-    };
-
-    setAppSettings(savedSettings);
-    setDraftAppSettings(savedSettings);
-
-    setSaveStatus("success");
-
-    window.setTimeout(() => {
-      setSaveStatus("idle");
-    }, 2600);
-  } catch (error) {
-    console.error(
-      "Failed to save application settings:",
-      error,
-    );
-
-    setSettingsError(
-      error?.message ||
-        "We couldn't save your application settings.",
-    );
-
-    setSaveStatus("error");
-  }
-}
 
   return (
     <motion.div
@@ -282,8 +248,8 @@ const [settingsError, setSettingsError] =
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-            Manage your business profile, account security,
-            team and SparkSales preferences from one place.
+            Manage your business profile, account security, team and SparkSales
+            preferences from one place.
           </p>
         </div>
 
@@ -293,9 +259,7 @@ const [settingsError, setSettingsError] =
           </div>
 
           <div>
-            <p className="text-xs font-bold text-slate-400">
-              Account
-            </p>
+            <p className="text-xs font-bold text-slate-400">Account</p>
 
             <p className="max-w-[200px] truncate text-sm font-bold text-slate-800">
               {account?.email || "Signed in"}
@@ -330,9 +294,7 @@ const [settingsError, setSettingsError] =
                 }}
                 className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#7FCFC0] text-lg font-black text-[#063D35] shadow-lg shadow-black/10"
               >
-                {businessInitials(
-                  business.name,
-                )}
+                {businessInitials(business.name)}
               </motion.div>
 
               <div className="min-w-0">
@@ -365,10 +327,9 @@ const [settingsError, setSettingsError] =
                 scale: 0.98,
               }}
               onClick={() => {
-                const editButton =
-                  document.getElementById(
-                    "business-edit-trigger",
-                  );
+                const editButton = document.getElementById(
+                  "business-edit-trigger",
+                );
 
                 editButton?.click();
               }}
@@ -389,18 +350,14 @@ const [settingsError, setSettingsError] =
             <HeroStat
               icon={Wallet}
               label="Starting capital"
-              value={`R ${Number(
-                business.startingCapital || 0,
-              ).toFixed(2)}`}
+              value={`R ${Number(business.startingCapital || 0).toFixed(2)}`}
             />
 
             <HeroStat
               icon={Crown}
               label="Commission"
               value={`${Math.round(
-                (Number(
-                  business.commissionRate,
-                ) || 0.05) * 100,
+                (Number(business.commissionRate) || 0.05) * 100,
               )}%`}
             />
 
@@ -417,19 +374,14 @@ const [settingsError, setSettingsError] =
       {/* BUSINESS INFORMATION                                   */}
       {/* ===================================================== */}
 
-      <BusinessSection
-        business={business}
-        onSave={saveBusiness}
-      />
+      <BusinessSection business={business} onSave={saveBusiness} />
 
       {/* ===================================================== */}
       {/* ACCOUNT SECURITY                                       */}
       {/* ===================================================== */}
 
       <motion.div variants={sectionVariants}>
-        <AccountSecuritySection
-          account={account}
-        />
+        <AccountSecuritySection account={account} />
       </motion.div>
 
       {/* ===================================================== */}
@@ -456,6 +408,8 @@ const [settingsError, setSettingsError] =
           appSettings={draftAppSettings}
           setAppSettings={setDraftAppSettings}
           account={account}
+          settingsLoading={settingsLoading}
+          settingsError={settingsError}
         />
       </motion.div>
 
@@ -474,8 +428,8 @@ const [settingsError, setSettingsError] =
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              Your saved business data will remain safely
-              stored in your account.
+              Your saved business data will remain safely stored in your
+              account.
             </p>
           </div>
 
@@ -549,8 +503,7 @@ const [settingsError, setSettingsError] =
                   </p>
 
                   <p className="text-xs text-slate-400">
-                    Save your SparkSales preferences before
-                    leaving this page.
+                    Save your SparkSales preferences before leaving this page.
                   </p>
                 </div>
               </div>
@@ -559,9 +512,7 @@ const [settingsError, setSettingsError] =
                 <button
                   type="button"
                   onClick={() => {
-                    setDraftAppSettings(
-                      appSettings,
-                    );
+                    setDraftAppSettings(appSettings);
                     setSaveStatus("idle");
                   }}
                   className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 sm:flex-none"
@@ -649,40 +600,26 @@ const [settingsError, setSettingsError] =
 /* BUSINESS SECTION                                          */
 /* ========================================================= */
 
-function BusinessSection({
-  business,
-  onSave,
-}) {
-  const [editing, setEditing] =
-    useState(false);
+function BusinessSection({ business, onSave }) {
+  const [editing, setEditing] = useState(false);
 
-  const [form, setForm] = useState(
-    business,
-  );
+  const [form, setForm] = useState(business);
 
-  const [saving, setSaving] =
-    useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [saved, setSaved] =
-    useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const [contactError, setContactError] =
-    useState("");
+  const [contactError, setContactError] = useState("");
 
   // eslint-disable-next-line no-unused-vars
-  const initials = businessInitials(
-    business.name,
-  );
+  const initials = businessInitials(business.name);
 
   async function save(event) {
     event.preventDefault();
 
     const contact = form.contact || "";
 
-    if (
-      contact &&
-      !isValidSAPhoneNumber(contact)
-    ) {
+    if (contact && !isValidSAPhoneNumber(contact)) {
       setContactError(
         "Enter a valid South African number — 10 digits, starting with 0.",
       );
@@ -697,8 +634,7 @@ function BusinessSection({
       const updated = {
         ...business,
         ...form,
-        startingCapital:
-          Number(form.startingCapital) || 0,
+        startingCapital: Number(form.startingCapital) || 0,
       };
 
       await onSave(updated);
@@ -711,8 +647,7 @@ function BusinessSection({
       }, 2600);
     } catch (error) {
       setContactError(
-        error?.message ||
-          "We couldn't save your business details.",
+        error?.message || "We couldn't save your business details.",
       );
     } finally {
       setSaving(false);
@@ -772,54 +707,37 @@ function BusinessSection({
 
             <InfoItem
               label="Owner / team lead"
-              value={
-                business.owner ||
-                "Not provided"
-              }
+              value={business.owner || "Not provided"}
               icon={Crown}
             />
 
             <InfoItem
               label="Contact"
-              value={
-                business.contact ||
-                "Not provided"
-              }
+              value={business.contact || "Not provided"}
               icon={Bell}
             />
 
             <InfoItem
               label="Location"
-              value={
-                business.location ||
-                "Not provided"
-              }
+              value={business.location || "Not provided"}
               icon={MapPin}
             />
 
             <InfoItem
               label="Stall / table"
-              value={
-                business.stallNumber ||
-                "Not provided"
-              }
+              value={business.stallNumber || "Not provided"}
               icon={MapPin}
             />
 
             <InfoItem
               label="Starting capital"
-              value={`R ${Number(
-                business.startingCapital || 0,
-              ).toFixed(2)}`}
+              value={`R ${Number(business.startingCapital || 0).toFixed(2)}`}
               icon={Wallet}
               highlight
             />
           </div>
         ) : (
-          <form
-            className="grid gap-4"
-            onSubmit={save}
-          >
+          <form className="grid gap-4" onSubmit={save}>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Business name"
@@ -850,10 +768,7 @@ function BusinessSection({
                 onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    contact:
-                      sanitizeSAPhoneInput(
-                        value,
-                      ),
+                    contact: sanitizeSAPhoneInput(value),
                   }))
                 }
                 placeholder="0821234567"
@@ -869,16 +784,12 @@ function BusinessSection({
                     category: value,
                   }))
                 }
-                options={
-                  BUSINESS_CATEGORIES
-                }
+                options={BUSINESS_CATEGORIES}
               />
 
               <Field
                 label="Stall / table no."
-                value={
-                  form.stallNumber || ""
-                }
+                value={form.stallNumber || ""}
                 onChange={(value) =>
                   setForm((current) => ({
                     ...current,
@@ -892,14 +803,11 @@ function BusinessSection({
                 type="number"
                 min="0"
                 step="0.01"
-                value={
-                  form.startingCapital ?? ""
-                }
+                value={form.startingCapital ?? ""}
                 onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    startingCapital:
-                      value,
+                    startingCapital: value,
                   }))
                 }
               />
@@ -907,9 +815,7 @@ function BusinessSection({
               <div className="sm:col-span-2">
                 <Field
                   label="Location"
-                  value={
-                    form.location || ""
-                  }
+                  value={form.location || ""}
                   onChange={(value) =>
                     setForm((current) => ({
                       ...current,
@@ -1014,9 +920,7 @@ function BusinessSection({
 /* ACCOUNT SECURITY                                          */
 /* ========================================================= */
 
-function AccountSecuritySection({
-  account,
-}) {
+function AccountSecuritySection({ account }) {
   const accountDetails = account || {
     fullName: "Account owner",
     email: "",
@@ -1044,10 +948,7 @@ function AccountSecuritySection({
 
           <InfoItem
             label="Email address"
-            value={
-              accountDetails.email ||
-              "Not available"
-            }
+            value={accountDetails.email || "Not available"}
             icon={Mail}
           />
         </div>
@@ -1069,33 +970,22 @@ function ChangePasswordForm() {
     confirm: "",
   });
 
-  const [status, setStatus] =
-    useState("idle");
+  const [status, setStatus] = useState("idle");
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [showCurrent, setShowCurrent] =
-    useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
 
-  const [showNext, setShowNext] =
-    useState(false);
+  const [showNext, setShowNext] = useState(false);
 
-  const [showConfirm, setShowConfirm] =
-    useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const tooShort =
-    form.next.length > 0 &&
-    form.next.length < 6;
+  const tooShort = form.next.length > 0 && form.next.length < 6;
 
-  const mismatch =
-    form.confirm.length > 0 &&
-    form.next !== form.confirm;
+  const mismatch = form.confirm.length > 0 && form.next !== form.confirm;
 
   const canSubmit =
-    form.current &&
-    form.next.length >= 6 &&
-    form.next === form.confirm;
+    form.current && form.next.length >= 6 && form.next === form.confirm;
 
   async function submit(event) {
     event.preventDefault();
@@ -1109,8 +999,7 @@ function ChangePasswordForm() {
 
     try {
       await api.changePassword({
-        currentPassword:
-          form.current,
+        currentPassword: form.current,
         newPassword: form.next,
       });
 
@@ -1126,20 +1015,14 @@ function ChangePasswordForm() {
         setStatus("idle");
       }, 3200);
     } catch (err) {
-      setError(
-        err?.message ||
-          "Couldn't update your password.",
-      );
+      setError(err?.message || "Couldn't update your password.");
 
       setStatus("error");
     }
   }
 
   return (
-    <form
-      className="mt-6 border-t border-slate-100 pt-6"
-      onSubmit={submit}
-    >
+    <form className="mt-6 border-t border-slate-100 pt-6" onSubmit={submit}>
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
           <ShieldCheck size={17} />
@@ -1167,9 +1050,7 @@ function ChangePasswordForm() {
             }))
           }
           visible={showCurrent}
-          setVisible={
-            setShowCurrent
-          }
+          setVisible={setShowCurrent}
         />
 
         <PasswordField
@@ -1197,9 +1078,7 @@ function ChangePasswordForm() {
               }))
             }
             visible={showConfirm}
-            setVisible={
-              setShowConfirm
-            }
+            setVisible={setShowConfirm}
             placeholder="Repeat password"
           />
         </div>
@@ -1234,10 +1113,7 @@ function ChangePasswordForm() {
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <motion.button
           type="submit"
-          disabled={
-            !canSubmit ||
-            status === "saving"
-          }
+          disabled={!canSubmit || status === "saving"}
           whileHover={{
             y: -1,
           }}
@@ -1290,22 +1166,14 @@ function ChangePasswordForm() {
 /* TEAM                                                      */
 /* ========================================================= */
 
-function TeamSection({
-  teamMembers,
-  setTeamMembers,
-  namespace,
-}) {
-  const [adding, setAdding] =
-    useState(false);
+function TeamSection({ teamMembers, setTeamMembers, namespace }) {
+  const [adding, setAdding] = useState(false);
 
-  const [name, setName] =
-    useState("");
+  const [name, setName] = useState("");
 
-  const [role, setRole] =
-    useState("Member");
+  const [role, setRole] = useState("Member");
 
-  const [removingId, setRemovingId] =
-    useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
   function addMember(event) {
     event.preventDefault();
@@ -1315,23 +1183,15 @@ function TeamSection({
     }
 
     const member = {
-      teamMemberId:
-        crypto.randomUUID(),
+      teamMemberId: crypto.randomUUID(),
       name: name.trim(),
       role,
     };
 
     setTeamMembers((members) => {
-      const next = [
-        ...members,
-        member,
-      ];
+      const next = [...members, member];
 
-      writeSettings(
-        namespace,
-        "team",
-        next,
-      );
+      writeSettings(namespace, "team", next);
 
       return next;
     });
@@ -1346,16 +1206,9 @@ function TeamSection({
 
     window.setTimeout(() => {
       setTeamMembers((members) => {
-        const next = members.filter(
-          (member) =>
-            member.teamMemberId !== id,
-        );
+        const next = members.filter((member) => member.teamMemberId !== id);
 
-        writeSettings(
-          namespace,
-          "team",
-          next,
-        );
+        writeSettings(namespace, "team", next);
 
         return next;
       });
@@ -1394,9 +1247,7 @@ function TeamSection({
           whileTap={{
             scale: 0.98,
           }}
-          onClick={() =>
-            setAdding((current) => !current)
-          }
+          onClick={() => setAdding((current) => !current)}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-[#063D35] transition hover:bg-[#E6F7F3]"
         >
           {adding ? (
@@ -1449,12 +1300,7 @@ function TeamSection({
                   label="Role"
                   value={role}
                   onChange={setRole}
-                  options={[
-                    "Owner",
-                    "Manager",
-                    "Cashier",
-                    "Member",
-                  ]}
+                  options={["Owner", "Manager", "Cashier", "Member"]}
                 />
               </div>
 
@@ -1482,8 +1328,8 @@ function TeamSection({
             </h3>
 
             <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-400">
-              Add your team so everyone involved in
-              the trading day is easy to identify.
+              Add your team so everyone involved in the trading day is easy to
+              identify.
             </p>
           </div>
         ) : (
@@ -1510,20 +1356,14 @@ function TeamSection({
                     duration: 0.22,
                   }}
                   className={`flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 transition hover:border-[#B8F2E6] hover:bg-[#F7FAF9] ${
-                    removingId ===
-                    member.teamMemberId
-                      ? "opacity-50"
-                      : ""
+                    removingId === member.teamMemberId ? "opacity-50" : ""
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-black text-[#063D35] shadow-sm">
                       {member.name
                         .split(" ")
-                        .map(
-                          (word) =>
-                            word[0],
-                        )
+                        .map((word) => word[0])
                         .slice(0, 2)
                         .join("")
                         .toUpperCase()}
@@ -1542,11 +1382,7 @@ function TeamSection({
 
                   <button
                     type="button"
-                    onClick={() =>
-                      removeMember(
-                        member.teamMemberId,
-                      )
-                    }
+                    onClick={() => removeMember(member.teamMemberId)}
                     className="rounded-lg px-3 py-2 text-xs font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-500"
                   >
                     Remove
@@ -1577,47 +1413,29 @@ function ApplicationSettingsSection({
     email: "",
   };
 
-  const [rateInput, setRateInput] =
-    useState(
-      String(
-        Math.max(
-          MIN_COMMISSION_PERCENT,
-          Math.round(
-            (Number(
-              business.commissionRate,
-            ) || 0.05) * 100,
-          ),
-        ),
+  const [rateInput, setRateInput] = useState(
+    String(
+      Math.max(
+        MIN_COMMISSION_PERCENT,
+        Math.round((Number(business.commissionRate) || 0.05) * 100),
       ),
-    );
+    ),
+  );
 
-  const [rateSaving, setRateSaving] =
-    useState(false);
+  const [rateSaving, setRateSaving] = useState(false);
 
-  const [rateSaved, setRateSaved] =
-    useState(false);
+  const [rateSaved, setRateSaved] = useState(false);
 
-  const [rateError, setRateError] =
-    useState("");
+  const [rateError, setRateError] = useState("");
 
   async function saveRate() {
-    const parsed =
-      Number(rateInput) ||
-      MIN_COMMISSION_PERCENT;
+    const parsed = Number(rateInput) || MIN_COMMISSION_PERCENT;
 
-    const clamped = Math.min(
-      Math.max(
-        parsed,
-        MIN_COMMISSION_PERCENT,
-      ),
-      100,
-    );
+    const clamped = Math.min(Math.max(parsed, MIN_COMMISSION_PERCENT), 100);
 
     const rate = clamped / 100;
 
-    setRateInput(
-      String(Math.round(rate * 100)),
-    );
+    setRateInput(String(Math.round(rate * 100)));
 
     setRateSaving(true);
     setRateSaved(false);
@@ -1630,15 +1448,12 @@ function ApplicationSettingsSection({
 
       setAuthToken(token);
 
-      await apiRequest(
-        "/api/business/commission-rate",
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            commissionRate: rate,
-          }),
-        },
-      );
+      await apiRequest("/api/business/commission-rate", {
+        method: "PUT",
+        body: JSON.stringify({
+          commissionRate: rate,
+        }),
+      });
 
       await refreshData();
 
@@ -1648,15 +1463,9 @@ function ApplicationSettingsSection({
         setRateSaved(false);
       }, 2600);
     } catch (error) {
-      console.error(
-        "Failed to save commission rate:",
-        error,
-      );
+      console.error("Failed to save commission rate:", error);
 
-      setRateError(
-        error?.message ||
-          "We couldn't save the commission rate.",
-      );
+      setRateError(error?.message || "We couldn't save the commission rate.");
     } finally {
       setRateSaving(false);
     }
@@ -1708,9 +1517,8 @@ function ApplicationSettingsSection({
               </p>
 
               <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">
-                SparkSales commission is applied to positive
-                gross profit. Your current business rate is
-                configurable here.
+                SparkSales commission is applied to positive gross profit. Your
+                current business rate is configurable here.
               </p>
             </div>
 
@@ -1720,16 +1528,10 @@ function ApplicationSettingsSection({
                 <div className="relative mt-1.5">
                   <input
                     type="number"
-                    min={
-                      MIN_COMMISSION_PERCENT
-                    }
+                    min={MIN_COMMISSION_PERCENT}
                     max="100"
                     value={rateInput}
-                    onChange={(event) =>
-                      setRateInput(
-                        event.target.value,
-                      )
-                    }
+                    onChange={(event) => setRateInput(event.target.value)}
                     className="w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm font-bold text-slate-800 outline-none transition focus:border-[#7FCFC0] focus:bg-white focus:ring-4 focus:ring-[#7FCFC0]/10"
                   />
 
@@ -1814,15 +1616,8 @@ function ApplicationSettingsSection({
             icon={Mail}
             title="Daily summary email"
             description="Receive a daily snapshot of your trading performance."
-            checked={
-              appSettings.dailySummaryEmail
-            }
-            onChange={(checked) =>
-              updateSetting(
-                "dailySummaryEmail",
-                checked,
-              )
-            }
+            checked={appSettings.dailySummaryEmail}
+            onChange={(checked) => updateSetting("dailySummaryEmail", checked)}
           />
 
           <AnimatePresence initial={false}>
@@ -1848,20 +1643,11 @@ function ApplicationSettingsSection({
                 <Field
                   label="Send summaries to"
                   type="email"
-                  value={
-                    appSettings.notificationEmail ||
-                    ""
-                  }
+                  value={appSettings.notificationEmail || ""}
                   onChange={(value) =>
-                    updateSetting(
-                      "notificationEmail",
-                      value,
-                    )
+                    updateSetting("notificationEmail", value)
                   }
-                  placeholder={
-                    accountDetails.email ||
-                    "your@email.com"
-                  }
+                  placeholder={accountDetails.email || "your@email.com"}
                 />
               </motion.div>
             )}
@@ -1874,15 +1660,8 @@ function ApplicationSettingsSection({
             icon={AlertTriangle}
             title="Loss alerts"
             description="Get notified when your business moves into negative gross profit."
-            checked={
-              appSettings.lossAlerts
-            }
-            onChange={(checked) =>
-              updateSetting(
-                "lossAlerts",
-                checked,
-              )
-            }
+            checked={appSettings.lossAlerts}
+            onChange={(checked) => updateSetting("lossAlerts", checked)}
             danger
           />
         </div>
@@ -1900,9 +1679,8 @@ function ApplicationSettingsSection({
               </p>
 
               <p className="mt-1 text-xs leading-5 text-slate-400">
-                Update the preferences above, then use the
-                floating <strong>Save settings</strong>{" "}
-                button to commit them.
+                Update the preferences above, then use the floating{" "}
+                <strong>Save settings</strong> button to commit them.
               </p>
             </div>
           </div>
@@ -1922,30 +1700,22 @@ function DangerZoneSection({
   deletionRequest,
   setDeletionRequest,
 }) {
-  const [open, setOpen] =
-    useState(false);
+  const [open, setOpen] = useState(false);
 
-  const [reason, setReason] =
-    useState("");
+  const [reason, setReason] = useState("");
 
-  const [confirmText, setConfirmText] =
-    useState("");
+  const [confirmText, setConfirmText] = useState("");
 
-  const [submitting, setSubmitting] =
-    useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   const canRequest =
-    confirmText.trim().toLowerCase() ===
-    business.name.trim().toLowerCase();
+    confirmText.trim().toLowerCase() === business.name.trim().toLowerCase();
 
   async function submitRequest() {
     if (!account?.email) {
-      setError(
-        "You need to be signed in to request removal.",
-      );
+      setError("You need to be signed in to request removal.");
       return;
     }
 
@@ -1953,12 +1723,11 @@ function DangerZoneSection({
     setError("");
 
     try {
-      const request =
-        await api.requestDeletion(
-          account.email,
-          business.name,
-          reason,
-        );
+      const request = await api.requestDeletion(
+        account.email,
+        business.name,
+        reason,
+      );
 
       setDeletionRequest(request);
       setOpen(false);
@@ -1983,9 +1752,7 @@ function DangerZoneSection({
     setError("");
 
     try {
-      await api.cancelDeletion(
-        deletionRequest.id,
-      );
+      await api.cancelDeletion(deletionRequest.id);
 
       setDeletionRequest(null);
     } catch (err) {
@@ -2043,12 +1810,9 @@ function DangerZoneSection({
 
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     Requested on{" "}
-                    {new Date(
-                      deletionRequest.requestedAt,
-                    ).toLocaleDateString()}
-                    . You'll receive confirmation once{" "}
-                    {business.name} has been permanently
-                    removed.
+                    {new Date(deletionRequest.requestedAt).toLocaleDateString()}
+                    . You'll receive confirmation once {business.name} has been
+                    permanently removed.
                   </p>
                 </div>
               </div>
@@ -2060,9 +1824,7 @@ function DangerZoneSection({
               onClick={cancelRequest}
               className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
             >
-              {submitting
-                ? "Cancelling..."
-                : "Cancel request"}
+              {submitting ? "Cancelling..." : "Cancel request"}
             </button>
           </div>
         ) : open ? (
@@ -2090,18 +1852,12 @@ function DangerZoneSection({
                   <Field
                     label={
                       <>
-                        Type{" "}
-                        <strong>
-                          {business.name}
-                        </strong>{" "}
-                        to confirm
+                        Type <strong>{business.name}</strong> to confirm
                       </>
                     }
                     value={confirmText}
                     onChange={setConfirmText}
-                    placeholder={
-                      business.name
-                    }
+                    placeholder={business.name}
                   />
                 </div>
               </div>
@@ -2122,16 +1878,11 @@ function DangerZoneSection({
 
                 <button
                   type="button"
-                  disabled={
-                    !canRequest ||
-                    submitting
-                  }
+                  disabled={!canRequest || submitting}
                   onClick={submitRequest}
                   className="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submitting
-                    ? "Submitting..."
-                    : "Request removal"}
+                  {submitting ? "Submitting..." : "Request removal"}
                 </button>
               </div>
             </motion.div>
@@ -2144,10 +1895,8 @@ function DangerZoneSection({
               </p>
 
               <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
-                Requesting removal notifies the SparkSales
-                team to permanently delete{" "}
-                <strong>{business.name}</strong> and
-                its associated data.
+                Requesting removal notifies the SparkSales team to permanently
+                delete <strong>{business.name}</strong> and its associated data.
               </p>
             </div>
 
@@ -2179,37 +1928,23 @@ function DangerZoneSection({
 /* SMALL COMPONENTS                                           */
 /* ========================================================= */
 
-function HeroStat({
-  icon: Icon,
-  label,
-  value,
-}) {
+function HeroStat({ icon: Icon, label, value }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-center gap-2">
-        <Icon
-          size={14}
-          className="text-[#B8F2E6]"
-        />
+        <Icon size={14} className="text-[#B8F2E6]" />
 
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
           {label}
         </span>
       </div>
 
-      <p className="mt-2 truncate text-sm font-extrabold text-white">
-        {value}
-      </p>
+      <p className="mt-2 truncate text-sm font-extrabold text-white">{value}</p>
     </div>
   );
 }
 
-function InfoItem({
-  label,
-  value,
-  icon: Icon,
-  highlight = false,
-}) {
+function InfoItem({ label, value, icon: Icon, highlight = false }) {
   return (
     <div className="group rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition hover:border-[#B8F2E6] hover:bg-[#F7FAF9]">
       <div className="flex items-start gap-3">
@@ -2224,9 +1959,7 @@ function InfoItem({
 
           <p
             className={`mt-1 truncate text-sm font-extrabold ${
-              highlight
-                ? "text-[#0C9A73]"
-                : "text-slate-800"
+              highlight ? "text-[#0C9A73]" : "text-slate-800"
             }`}
           >
             {value}
@@ -2254,21 +1987,14 @@ function Field({
         type={type}
         value={value}
         placeholder={placeholder}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
       />
     </label>
   );
 }
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-}) {
+function SelectField({ label, value, onChange, options }) {
   return (
     <label className="block text-sm font-bold text-slate-700">
       {label}
@@ -2276,16 +2002,11 @@ function SelectField({
       <div className="relative mt-1.5">
         <select
           value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
+          onChange={(event) => onChange(event.target.value)}
           className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm font-medium text-slate-800 outline-none transition focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
         >
           {options.map((option) => (
-            <option
-              key={option}
-              value={option}
-            >
+            <option key={option} value={option}>
               {option}
             </option>
           ))}
@@ -2314,36 +2035,20 @@ function PasswordField({
 
       <div className="relative mt-1.5">
         <input
-          type={
-            visible ? "text" : "password"
-          }
+          type={visible ? "text" : "password"}
           value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-11 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
         />
 
         <button
           type="button"
-          onClick={() =>
-            setVisible(
-              (current) => !current,
-            )
-          }
+          onClick={() => setVisible((current) => !current)}
           className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label={
-            visible
-              ? `Hide ${label}`
-              : `Show ${label}`
-          }
+          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
         >
-          {visible ? (
-            <EyeOff size={16} />
-          ) : (
-            <Eye size={16} />
-          )}
+          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
     </label>
@@ -2363,18 +2068,14 @@ function SettingToggle({
       <div className="flex items-start gap-3">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-            danger
-              ? "bg-red-50 text-red-500"
-              : "bg-[#E6F7F3] text-[#063D35]"
+            danger ? "bg-red-50 text-red-500" : "bg-[#E6F7F3] text-[#063D35]"
           }`}
         >
           <Icon size={17} />
         </div>
 
         <div>
-          <p className="text-sm font-extrabold text-slate-800">
-            {title}
-          </p>
+          <p className="text-sm font-extrabold text-slate-800">{title}</p>
 
           <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">
             {description}
@@ -2386,13 +2087,9 @@ function SettingToggle({
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() =>
-          onChange(!checked)
-        }
+        onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-          checked
-            ? "bg-[#063D35]"
-            : "bg-slate-200"
+          checked ? "bg-[#063D35]" : "bg-slate-200"
         }`}
       >
         <motion.span
@@ -2428,25 +2125,14 @@ function businessInitials(name) {
 }
 
 function accountNamespace(account) {
-  return (
-    account?.email ||
-    "guest"
-  )
-    .trim()
-    .toLowerCase();
+  return (account?.email || "guest").trim().toLowerCase();
 }
 
-function readSettings(
-  namespace,
-  key,
-  fallback,
-) {
+function readSettings(namespace, key, fallback) {
   try {
     return (
       JSON.parse(
-        localStorage.getItem(
-          `${SETTINGS_STORAGE_KEY}-${namespace}-${key}`,
-        ),
+        localStorage.getItem(`${SETTINGS_STORAGE_KEY}-${namespace}-${key}`),
       ) ?? fallback
     );
   } catch {
@@ -2454,11 +2140,7 @@ function readSettings(
   }
 }
 
-function writeSettings(
-  namespace,
-  key,
-  value,
-) {
+function writeSettings(namespace, key, value) {
   localStorage.setItem(
     `${SETTINGS_STORAGE_KEY}-${namespace}-${key}`,
     JSON.stringify(value),
