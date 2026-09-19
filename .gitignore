@@ -30,3 +30,10 @@ backend/.env
 # .NET build artifacts
 backend/bin/
 backend/obj/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
