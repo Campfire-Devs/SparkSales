@@ -23,7 +23,7 @@ GitHub Actions runs `npm ci`, ESLint, and the production build for pull requests
 | ------- | ------------------------------------------------------------------------------------------------------- |
 | Main    | ![Main Branch](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg?branch=main)       |
 | Develop | ![Develop Branch](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg?branch=develop) |
-| Deploy | ![Release Branch](https://github.com/myorg/Campfire-Devs/SparkSales/workflows/ci.yml/badge.svg?branch=deploy) |
+| Deploy | ![Deploy Branch](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg?branch=deploy) |
 
 ## Notes
 
