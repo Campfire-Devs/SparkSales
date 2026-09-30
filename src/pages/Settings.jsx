@@ -31,12 +31,6 @@ import { useSparkSales } from "../context/SparkSalesContext";
  
 import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber, formatDateTime } from "../utils/sparkSales";
 
-import {
-  BUSINESS_CATEGORIES,
-  sanitizeSAPhoneInput,
-  isValidSAPhoneNumber,
-} from "../utils/sparkSales";
-
 
 const MIN_COMMISSION_PERCENT = 5;
 const SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
@@ -951,17 +945,6 @@ function AccountSecuritySection({ account }) {
   };
 
   return (
-
-    <section className="ss-card">
-      <div className="ss-card-head"><h2>Account &amp; security</h2></div>
-      <div className="ss-settings-grid" style={{ marginBottom: 20 }}>
-        <div><span className="ss-stat-label">Name</span><p>{accountDetails.fullName}</p></div>
-        <div><span className="ss-stat-label">Email</span><p>{accountDetails.email || "Not available"}</p></div>
-        <div>
-          <span className="ss-stat-label">Password last changed</span>
-          <p>{accountDetails.passwordChangedAt ? formatDateTime(accountDetails.passwordChangedAt) : "Not available"}</p>
-        </div>
-
     <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -969,9 +952,8 @@ function AccountSecuritySection({ account }) {
         </p>
 
         <h2 className="mt-1 text-lg font-extrabold text-[#063D35]">
-          Account & security
+          Account &amp; security
         </h2>
-
       </div>
 
       <div className="p-5 sm:p-6">
@@ -989,6 +971,11 @@ function AccountSecuritySection({ account }) {
           />
         </div>
 
+        <div className="mt-4" style={{ marginBottom: 20 }}>
+          <span className="ss-stat-label">Password last changed</span>
+          <p>{accountDetails.passwordChangedAt ? formatDateTime(accountDetails.passwordChangedAt) : "Not available"}</p>
+        </div>
+
         <ChangePasswordForm />
       </div>
     </section>
@@ -1004,14 +991,6 @@ function ChangePasswordForm() {
   const { updateAccount } = useAuth();
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [status, setStatus] = useState(""); // "", "saving", "success", "error"
-
-  const [form, setForm] = useState({
-    current: "",
-    next: "",
-    confirm: "",
-  });
-
-  const [status, setStatus] = useState("idle");
 
 
   const [error, setError] = useState("");
@@ -1046,17 +1025,6 @@ function ChangePasswordForm() {
       // reflect that immediately instead of only finding out next login.
       if (updated) updateAccount(updated);
       setForm({ current: "", next: "", confirm: "" });
-
-      await api.changePassword({
-        currentPassword: form.current,
-        newPassword: form.next,
-      });
-
-      setForm({
-        current: "",
-        next: "",
-        confirm: "",
-      });
 
 
       setStatus("success");

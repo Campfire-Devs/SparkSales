@@ -160,20 +160,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
- feature/settings
     <AuthContext.Provider value={{ account, token, loading, register, login, logout, updateAccount }}>
-
-    <AuthContext.Provider
-      value={{
-        account,
-        token,
-        loading,
-        register,
-        login,
-        logout,
-      }}
-    
-
       {children}
     </AuthContext.Provider>
   );
