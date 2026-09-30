@@ -17,6 +17,14 @@ GitHub Actions runs `npm ci`, ESLint, and the production build for pull requests
 
 `feature/*` → Pull Request → `develop` → release PR → `main`
 
+## Project Status
+
+| Branch  | Status                                                                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------- |
+| Main    | ![Main Branch](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg?branch=main)       |
+| Develop | ![Develop Branch](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg?branch=develop) |
+| Deploy | ![Release Branch](https://github.com/myorg/Campfire-Devs/SparkSales/workflows/ci.yml/badge.svg?branch=deploy) |
+
 ## Notes
 
 The application currently uses browser localStorage for its development template data. Replace this with the production backend when authentication/database work is introduced.
