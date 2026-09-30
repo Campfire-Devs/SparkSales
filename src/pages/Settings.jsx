@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { api } from "../lib/apiClient";
 import { useAuth } from "../context/AuthContext";
 import { useSparkSales } from "../context/SparkSalesContext";
-import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber } from "../utils/sparkSales";
+import { BUSINESS_CATEGORIES, sanitizeSAPhoneInput, isValidSAPhoneNumber, formatDateTime } from "../utils/sparkSales";
 
 const MIN_COMMISSION_PERCENT = 5;
 const SETTINGS_STORAGE_KEY = "sparksales-settings-v1";
@@ -198,6 +198,10 @@ function AccountSecuritySection({ account }) {
       <div className="ss-settings-grid" style={{ marginBottom: 20 }}>
         <div><span className="ss-stat-label">Name</span><p>{accountDetails.fullName}</p></div>
         <div><span className="ss-stat-label">Email</span><p>{accountDetails.email || "Not available"}</p></div>
+        <div>
+          <span className="ss-stat-label">Password last changed</span>
+          <p>{accountDetails.passwordChangedAt ? formatDateTime(accountDetails.passwordChangedAt) : "Not available"}</p>
+        </div>
       </div>
 
       <ChangePasswordForm />
@@ -209,6 +213,7 @@ function AccountSecuritySection({ account }) {
 }
 
 function ChangePasswordForm() {
+  const { updateAccount } = useAuth();
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [status, setStatus] = useState(""); // "", "saving", "success", "error"
   const [error, setError] = useState("");
@@ -222,7 +227,10 @@ function ChangePasswordForm() {
     setStatus("saving");
     setError("");
     try {
-      await api.changePassword({ currentPassword: form.current, newPassword: form.next });
+      const updated = await api.changePassword({ currentPassword: form.current, newPassword: form.next });
+      // The backend returns the account with its new passwordChangedAt —
+      // reflect that immediately instead of only finding out next login.
+      if (updated) updateAccount(updated);
       setForm({ current: "", next: "", confirm: "" });
       setStatus("success");
       setTimeout(() => setStatus(""), 3000);

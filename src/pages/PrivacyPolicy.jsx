@@ -4,15 +4,15 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 py-8">
+    <div className="mx-auto max-w-3xl space-y-10 px-4 py-8 sm:px-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-[#4FAF9D]">
             SparkSales
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold text-[#063D35]">
+          <h1 className="mt-2 text-3xl font-bold text-[#063D35] sm:text-4xl">
             Privacy Policy
           </h1>
           <p className="mt-3 text-gray-500">Last updated: September 2026</p>
@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
+          className="inline-flex w-fit items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
         >
           ← Back
         </button>
@@ -70,7 +70,7 @@ const PrivacyPolicy = () => {
 
         <PolicySection
           title="8. Your Rights"
-          text="Under POPIA, you have the right to: (a) request access to the personal information we hold about you; (b) request correction of inaccurate or incomplete information; (c) request deletion of your information, subject to our legal retention obligations; (d) object to certain types of processing; and (e) lodge a complaint with the Information Regulator of South Africa. To exercise these rights, contact us using the details in Clause 11."
+          text="Under POPIA, you have the right to: (a) request access to the personal information we hold about you; (b) request correction of inaccurate or incomplete information; (c) request deletion of your information, subject to our legal retention obligations; (d) object to certain types of processing; and (e) lodge a complaint with the Information Regulator of South Africa. To exercise these rights, contact us using the details in Clause 12."
         />
 
         <PolicySection
@@ -89,9 +89,9 @@ const PrivacyPolicy = () => {
         />
 
         <PolicySection
-           title="12. Contact Us"
+          title="12. Contact Us"
           text="For privacy-related questions or requests, contact the SparkSales team at sparksales.team01@gmail.com."
-         />
+        />
       </div>
     </div>
   );

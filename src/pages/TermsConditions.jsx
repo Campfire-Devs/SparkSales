@@ -4,15 +4,15 @@ const TermsConditions = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 py-8">
+    <div className="mx-auto max-w-3xl space-y-10 px-4 py-8 sm:px-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-[#4FAF9D]">
             SparkSales
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold text-[#063D35]">
+          <h1 className="mt-2 text-3xl font-bold text-[#063D35] sm:text-4xl">
             Terms &amp; Conditions
           </h1>
           <p className="mt-3 text-gray-500">Last updated: September 2026</p>
@@ -23,7 +23,7 @@ const TermsConditions = () => {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
+          className="inline-flex w-fit items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
         >
           ← Back
         </button>
@@ -82,7 +82,7 @@ const TermsConditions = () => {
         />
 
         <TermsSection
-         title="11. Contact"
+          title="11. Contact"
           text="Questions regarding these Terms should be directed to the SparkSales team at sparksales.team01@gmail.com."
         />
       </div>

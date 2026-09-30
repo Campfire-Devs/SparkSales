@@ -47,7 +47,8 @@ app.MapPost("/api/auth/register", async (RegisterRequest request, WelcomeEmailSe
         Guid.NewGuid().ToString("N"),
         request.FullName.Trim(),
         email,
-        request.Password);
+        PasswordHasher.Hash(request.Password),
+        DateTime.UtcNow);
 
     if (!accounts.TryAdd(email, account))
         return Results.Conflict("An account with that email already exists.");
@@ -61,7 +62,7 @@ app.MapPost("/api/auth/register", async (RegisterRequest request, WelcomeEmailSe
 app.MapPost("/api/auth/login", (LoginRequest request) =>
 {
     var email = request.Email.Trim().ToLowerInvariant();
-    if (!accounts.TryGetValue(email, out var account) || account.Password != request.Password)
+    if (!accounts.TryGetValue(email, out var account) || !PasswordHasher.Verify(request.Password, account.PasswordHash))
         return Results.Unauthorized();
 
     var loginToken = CreateToken();
@@ -156,11 +157,16 @@ app.MapPut("/api/auth/change-password", (ChangePasswordRequest request, HttpCont
     if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
         return Results.BadRequest("New password must be at least 6 characters.");
 
-    if (!accounts.TryGetValue(email, out var account) || account.Password != request.CurrentPassword)
+    if (!accounts.TryGetValue(email, out var account) || !PasswordHasher.Verify(request.CurrentPassword, account.PasswordHash))
         return Results.BadRequest("Current password is incorrect.");
 
-    accounts[email] = account with { Password = request.NewPassword };
-    return Results.NoContent();
+    var updated = account with
+    {
+        PasswordHash = PasswordHasher.Hash(request.NewPassword),
+        PasswordChangedAt = DateTime.UtcNow,
+    };
+    accounts[email] = updated;
+    return Results.Ok(updated.ToPublic());
 });
 
 // ---- Daily summary / loss alert emails ----
@@ -238,7 +244,11 @@ app.MapPost("/api/auth/reset-password", (ResetPasswordRequest request) =>
         return Results.BadRequest("This reset link is invalid or has expired. Please request a new one.");
     }
 
-    accounts[email] = account with { Password = request.NewPassword };
+    accounts[email] = account with
+    {
+        PasswordHash = PasswordHasher.Hash(request.NewPassword),
+        PasswordChangedAt = DateTime.UtcNow,
+    };
     return Results.NoContent();
 });
 
@@ -293,6 +303,42 @@ static string CreateToken() => Convert.ToHexString(RandomNumberGenerator.GetByte
 static bool IsValidEmail(string email) =>
     Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$", RegexOptions.CultureInvariant);
 
+// PBKDF2 password hashing using only what's already in .NET's base class
+// library — no new NuGet package needed. Stored as
+// "{iterations}.{saltBase64}.{hashBase64}" so the iteration count travels
+// with the hash itself; it can go up later without breaking older hashes.
+static class PasswordHasher
+{
+    private const int SaltSizeBytes = 16;
+    private const int HashSizeBytes = 32;
+    private const int Iterations = 100_000;
+
+    public static string Hash(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, HashSizeBytes);
+        return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
+    }
+
+    public static bool Verify(string password, string stored)
+    {
+        var parts = stored.Split('.');
+        if (parts.Length != 3) return false;
+        if (!int.TryParse(parts[0], out var iterations)) return false;
+
+        byte[] salt, expectedHash;
+        try
+        {
+            salt = Convert.FromBase64String(parts[1]);
+            expectedHash = Convert.FromBase64String(parts[2]);
+        }
+        catch (FormatException) { return false; }
+
+        var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+    }
+}
+
 app.Run();
 
 static class OAuthProvider
@@ -309,8 +355,8 @@ sealed record ResetPasswordRequest(string? Token, string NewPassword);
 sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 sealed record DailySummaryRequest(string BusinessName, string? Recipient, decimal Revenue, decimal Expenses, decimal GrossProfit, decimal NetProfit);
 sealed record LossAlertRequest(string BusinessName, string? Recipient, decimal NetProfit);
-sealed record DemoAccount(string AccountId, string FullName, string Email, string Password);
-sealed record PublicAccount(string AccountId, string FullName, string Email);
+sealed record DemoAccount(string AccountId, string FullName, string Email, string PasswordHash, DateTime PasswordChangedAt);
+sealed record PublicAccount(string AccountId, string FullName, string Email, DateTime PasswordChangedAt);
 sealed record AuthResponse(string Token, PublicAccount Account);
 sealed record DeletionRequestBody(string Email, string BusinessName, string? Reason);
 sealed record DeletionRequestRecord(string Id, string Email, string BusinessName, string? Reason, DateTime RequestedAt, string Status);
@@ -318,5 +364,5 @@ sealed record DeletionRequestRecord(string Id, string Email, string BusinessName
 static class DemoAccountExtensions
 {
     public static PublicAccount ToPublic(this DemoAccount account) =>
-        new(account.AccountId, account.FullName, account.Email);
+        new(account.AccountId, account.FullName, account.Email, account.PasswordChangedAt);
 }

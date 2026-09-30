@@ -84,7 +84,7 @@ function LoginForm() {
       <form onSubmit={handleSubmit} className="ss-form">
         <label className="ss-field">
           <span>Email</span>
-          <input type="email" required placeholder="you@business.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="email" required placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
         <label className="ss-field">
           <span>Password</span>

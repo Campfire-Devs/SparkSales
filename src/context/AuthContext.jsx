@@ -51,8 +51,15 @@ export function AuthProvider({ children }) {
     setAccount(null);
   }, []);
 
+  // Merges fields into the stored account — used after actions like
+  // changing a password, where the server returns an updated account
+  // (e.g. a new passwordChangedAt) without requiring a fresh login.
+  const updateAccount = useCallback((fields) => {
+    setAccount((prev) => (prev ? { ...prev, ...fields } : prev));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ account, token, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ account, token, loading, register, login, logout, updateAccount }}>
       {children}
     </AuthContext.Provider>
   );

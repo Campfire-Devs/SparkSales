@@ -112,6 +112,46 @@ body {
   .ss-setup-page { min-height: calc(100vh - 64px); padding: 28px 14px 44px; }
   .ss-setup-card { padding: 28px 20px 24px; border-radius: 22px; }
   .ss-field-row { flex-direction: column; gap: 18px; }
+
+  /* Login/Register: the two panels are absolutely positioned at 50% width
+     each and slide past one another on desktop — on a phone that squeezes
+     the actual form into roughly half the screen. Collapse to a single
+     stacked column instead: the decorative panel (which also holds the
+     Login/Register toggle button) becomes a compact banner on top, and the
+     form takes the full width below it. */
+  .ss-authpage { padding: 28px 14px 44px; }
+  .ss-authcard { min-height: unset; }
+  .ss-authcard-color,
+  .ss-authcard.is-login .ss-authcard-color,
+  .ss-authcard.is-register .ss-authcard-color {
+    position: static;
+    left: auto;
+    width: 100%;
+    height: auto;
+    padding: 26px 22px;
+    border-radius: 0;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .ss-authcard-greeting { font-size: 22px; }
+  .ss-authcard-form,
+  .ss-authcard.is-login .ss-authcard-form,
+  .ss-authcard.is-register .ss-authcard-form {
+    position: static;
+    left: auto;
+    width: 100%;
+    height: auto;
+    padding: 26px 22px 34px;
+    overflow-y: visible;
+  }
+
+  /* Settings: two-column stat grids get cramped on a phone. */
+  .ss-settings-grid { grid-template-columns: 1fr; }
+
+  /* Button rows (Cancel/Save, delete-account confirm, etc.) — let them
+     wrap instead of overflowing or squeezing text on a narrow screen. */
+  .ss-terms-actions { flex-wrap: wrap; }
 }
 
 /* Settings screens */

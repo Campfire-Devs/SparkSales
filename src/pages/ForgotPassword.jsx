@@ -54,7 +54,7 @@ function ForgotPassword() {
               <input
                 type="email"
                 required
-                placeholder="you@business.com"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

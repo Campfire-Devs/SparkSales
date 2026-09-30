@@ -47,6 +47,20 @@ export const formatDate = (iso) =>
     }
   );
 
+// For full timestamps (e.g. "when was the password last changed") rather
+// than the plain YYYY-MM-DD dates sales/expenses use above.
+export const formatDateTime = (iso) =>
+  new Date(iso).toLocaleString(
+    "en-ZA",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
+
 // Every account gets its own slice of localStorage, keyed by email — shared
 // between Settings.jsx (which owns the "app"/"team" settings UI) and
 // anything else that needs to read the same per-account settings, like the
