@@ -1,6 +1,6 @@
 # SparkSales
 
-SparkSales is a student Entrepreneurship Day financial dashboard for recording sales and expenses, calculating gross profit, SparkSales 5% commission, and net profit.
+SparkSales is a student Entrepreneurship Day financial dashboard for recording sales and expenses, calculating gross profit, SparkSales 5% commission, and net profit. And Stuff
 
 ## Development
 
