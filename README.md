@@ -1,4 +1,4 @@
-# SparkSales
+# SparkSales ![CI](https://github.com/Campfire-Devs/SparkSales/actions/workflows/ci.yml/badge.svg) 
 
 SparkSales is a student Entrepreneurship Day financial dashboard for recording sales and expenses, calculating gross profit, SparkSales 5% commission, and net profit.
 
