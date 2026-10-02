@@ -56,26 +56,28 @@ builder.Services
     .AddJwtBearer(options =>
     {
         options.RequireHttpsMetadata = false;
-
         options.SaveToken = false;
 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey)
-            ),
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
 
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtKey)
+                    ),
 
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
 
-            ValidateLifetime = true,
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
 
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
+                ValidateLifetime = true,
+
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
     });
 
 builder.Services.AddAuthorization();
@@ -102,6 +104,7 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 frontendBaseUrl,
+                "http://localhost:5173",
                 "http://127.0.0.1:5173"
             )
             .AllowAnyHeader()
@@ -109,27 +112,45 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ---------------------------------------------------------
+// Vercel / container port
+// ---------------------------------------------------------
+
+var port = Environment.GetEnvironmentVariable("PORT");
+
+if (!string.IsNullOrWhiteSpace(port) &&
+    int.TryParse(port, out _))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
+// ---------------------------------------------------------
+// Build
+// ---------------------------------------------------------
+
 var app = builder.Build();
 
 // ---------------------------------------------------------
-// Middleware
+// Development-only middleware
 // ---------------------------------------------------------
 
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+// ---------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------
 
 app.UseCors();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 // ---------------------------------------------------------
-// Endpoints
+// Health endpoint
 // ---------------------------------------------------------
 
 app.MapGet("/health", () =>
