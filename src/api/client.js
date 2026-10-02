@@ -8,7 +8,6 @@ function setAuthToken(token) {
 }
 
 async function apiRequest(endpoint, options = {}) {
-  const method = options.method || "GET";
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers = {
