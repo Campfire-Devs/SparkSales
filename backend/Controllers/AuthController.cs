@@ -104,9 +104,6 @@ public class AuthController : ControllerBase
 
         var token = _jwt.GenerateToken(user);
 
-        // Email failure must not prevent account creation.
-        _ = _email.SendAsync(user.Email, user.FullName);
-
         return Ok(new AuthResponse(
             token,
             ToResponse(user)
