@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using SparkSalesApi.Auth;
 using SparkSalesApi.Data;
 
+// Please work
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Vercel supplies PORT for container deployments.
