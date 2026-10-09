@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -5,7 +7,20 @@ using Microsoft.IdentityModel.Tokens;
 using SparkSalesApi.Auth;
 using SparkSalesApi.Data;
 
+// ---------------------------------------------------------
+// Application startup
+// ---------------------------------------------------------
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Vercel supplies PORT for container deployments.
+// Local development continues to use launchSettings.json.
+var vercelPort = Environment.GetEnvironmentVariable("PORT");
+
+if (int.TryParse(vercelPort, out var port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
 // ---------------------------------------------------------
 // Database
@@ -63,10 +78,9 @@ builder.Services
             {
                 ValidateIssuerSigningKey = true,
 
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtKey)
-                    ),
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtKey)
+                ),
 
                 ValidateIssuer = true,
                 ValidIssuer = jwtIssuer,
@@ -75,7 +89,6 @@ builder.Services
                 ValidAudience = jwtAudience,
 
                 ValidateLifetime = true,
-
                 ClockSkew = TimeSpan.FromMinutes(1)
             };
     });
@@ -101,31 +114,24 @@ builder.Services.AddCors(options =>
             builder.Configuration["Frontend:BaseUrl"]
             ?? "http://localhost:5173";
 
+        var allowedOrigins = new[]
+        {
+            frontendBaseUrl,
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        }
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
         policy
-            .WithOrigins(
-                frontendBaseUrl,
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-            )
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
 // ---------------------------------------------------------
-// Vercel / container port
-// ---------------------------------------------------------
-
-var port = Environment.GetEnvironmentVariable("PORT");
-
-if (!string.IsNullOrWhiteSpace(port) &&
-    int.TryParse(port, out _))
-{
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-}
-
-// ---------------------------------------------------------
-// Build
+// Build application
 // ---------------------------------------------------------
 
 var app = builder.Build();
