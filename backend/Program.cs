@@ -7,6 +7,15 @@ using SparkSalesApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Vercel supplies PORT for container deployments.
+// Local development continues to use launchSettings.json.
+var vercelPort = Environment.GetEnvironmentVariable("PORT");
+
+if (int.TryParse(vercelPort, out var port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 // ---------------------------------------------------------
 // Database
 // ---------------------------------------------------------
