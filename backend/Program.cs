@@ -110,12 +110,17 @@ builder.Services.AddCors(options =>
             builder.Configuration["Frontend:BaseUrl"]
             ?? "http://localhost:5173";
 
+        var allowedOrigins = new[]
+        {
+            frontendBaseUrl,
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        }
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
         policy
-            .WithOrigins(
-                frontendBaseUrl,
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-            )
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
