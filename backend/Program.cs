@@ -8,7 +8,7 @@ using SparkSalesApi.Auth;
 using SparkSalesApi.Data; 
 
 // ---------------------------------------------------------
-// Application startup
+// Application startup for the sparksales 
 // ---------------------------------------------------------
 
 var builder = WebApplication.CreateBuilder(args);
