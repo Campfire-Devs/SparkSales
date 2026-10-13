@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SparkSalesApi.Auth;
-using SparkSalesApi.Data;
+using SparkSalesApi.Data; 
 
 // ---------------------------------------------------------
 // Application startup
