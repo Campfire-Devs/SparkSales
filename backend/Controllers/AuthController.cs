@@ -104,9 +104,6 @@ public class AuthController : ControllerBase
 
         var token = _jwt.GenerateToken(user);
 
-        // Email failure must not prevent account creation.
-        _ = _email.SendAsync(user.Email, user.FullName);
-
         return Ok(new AuthResponse(
             token,
             ToResponse(user)
@@ -147,10 +144,20 @@ public class AuthController : ControllerBase
             return Unauthorized("Incorrect email or password.");
         }
 
+        
+        // Determine whether this is the user's first successful login.
+        var isFirstLogin = user.LastLoginAt is null;
+
         user.LastLoginAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        // Send the welcome email only once, on first successful login.
+        if (isFirstLogin)
+        {
+            await _email.SendAsync(user.Email, user.FullName);
+        }
 
         var token = _jwt.GenerateToken(user);
 
@@ -158,6 +165,7 @@ public class AuthController : ControllerBase
             token,
             ToResponse(user)
         ));
+
     }
 
     // ---------------------------------------------------------
