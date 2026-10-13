@@ -31,9 +31,12 @@ backend/.env
 backend/bin/
 backend/obj/
 
-# Environment / secrets
+# Environment files - NEVER commit real secrets
 .env
 .env.*
+**/.env
+**/.env.*
+
+# Allow safe templates with placeholder values only
 !.env.example
-.env.local
-.env.*.local
+!**/.env.example
