@@ -1,18 +1,19 @@
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 py-8">
+    <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-[#4FAF9D]">
             SparkSales
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold text-[#063D35]">
+          <h1 className="mt-2 text-3xl font-bold leading-tight text-[#063D35] sm:text-4xl">
             Privacy Policy
           </h1>
           <p className="mt-3 text-gray-500">Last updated: September 2026</p>
@@ -23,14 +24,15 @@ const PrivacyPolicy = () => {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#063D35] rounded-md hover:bg-[#045247] focus:ring-1 focus:ring-[#063D35] focus:outline-none transition"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#DCEAE6] bg-white px-4 text-sm font-semibold text-[#063D35] shadow-sm transition hover:border-[#4FA391] hover:bg-[#F0FAF7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4FA391] focus-visible:ring-offset-2 active:scale-[0.98]"
         >
-          ← Back
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Back</span>
         </button>
       </div>
 
       {/* Policy Sections */}
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <PolicySection
           title="1. Introduction"
           text="SparkSales ('we', 'us', 'our') is a focused, event-specific financial service that helps student entrepreneurs understand their revenue, expenses, and real profit, while creating a clear and transparent 
@@ -93,7 +95,7 @@ const PrivacyPolicy = () => {
           text="For privacy-related questions or requests, contact the SparkSales team at sparksales.team01@gmail.com."
          />
       </div>
-    </div>
+    </main>
   );
 };
 
@@ -101,7 +103,7 @@ const PolicySection = ({ title, text }) => {
   return (
     <section>
       <h2 className="text-lg font-bold text-[#063D35]">{title}</h2>
-      <p className="mt-2 leading-relaxed text-gray-600">{text}</p>
+      <p className="mt-2 break-words leading-relaxed text-gray-600">{text}</p>
     </section>
   );
 };

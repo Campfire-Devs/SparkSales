@@ -1,4 +1,6 @@
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -108,6 +110,145 @@ public class AuthController : ControllerBase
             token,
             ToResponse(user)
         ));
+    }
+
+    // ---------------------------------------------------------
+    // FORGOT PASSWORD
+    // POST /api/auth/forgot-password
+    // ---------------------------------------------------------
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequest request)
+    {
+        var email = request.Email?.Trim().ToLowerInvariant() ?? "";
+
+        if (!IsValidEmail(email))
+        {
+            return BadRequest("Please enter a valid email address.");
+        }
+
+        if (!_email.IsConfigured)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                "Password reset email is not configured. Please try again later.");
+        }
+
+        var user = await _db.Users
+            .FirstOrDefaultAsync(account =>
+                account.Email == email && account.AuthProvider == "email");
+
+        if (user is null)
+        {
+            return Ok();
+        }
+
+        var now = DateTime.UtcNow;
+        var activeTokens = await _db.PasswordResetTokens
+            .Where(token => token.UserId == user.UserId && token.UsedAt == null)
+            .ToListAsync();
+
+        foreach (var activeToken in activeTokens)
+        {
+            activeToken.UsedAt = now;
+        }
+
+        var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var tokenHash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+
+        _db.PasswordResetTokens.Add(new PasswordResetToken
+        {
+            PasswordResetTokenId = Guid.NewGuid(),
+            UserId = user.UserId,
+            TokenHash = tokenHash,
+            ExpiresAt = now.AddMinutes(30),
+            CreatedAt = now
+        });
+
+        await _db.SaveChangesAsync();
+
+        await _email.SendPasswordResetAsync(user.Email, user.FullName, rawToken);
+
+        return Ok();
+    }
+
+    // ---------------------------------------------------------
+    // RESET PASSWORD
+    // POST /api/auth/reset-password
+    // ---------------------------------------------------------
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequest request)
+    {
+        if (!IsStrongEnoughPassword(request.NewPassword))
+        {
+            return BadRequest(
+                "Password must be at least 8 characters and contain at least one letter and one number."
+            );
+        }
+
+        var tokenHash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(request.Token ?? "")));
+        var now = DateTime.UtcNow;
+
+        var token = await _db.PasswordResetTokens
+            .AsNoTracking()
+            .Where(resetToken =>
+                resetToken.TokenHash == tokenHash
+                && resetToken.UsedAt == null
+                && resetToken.ExpiresAt > now)
+            .Select(resetToken => new
+            {
+                resetToken.PasswordResetTokenId,
+                resetToken.UserId
+            })
+            .FirstOrDefaultAsync();
+
+        if (token is null)
+        {
+            return BadRequest("This reset link is invalid or has expired. Please request a new one.");
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        var consumedAt = DateTime.UtcNow;
+
+        var tokenConsumed = await _db.PasswordResetTokens
+            .Where(resetToken =>
+                resetToken.PasswordResetTokenId == token.PasswordResetTokenId
+                && resetToken.UsedAt == null
+                && resetToken.ExpiresAt > consumedAt)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(resetToken => resetToken.UsedAt, consumedAt));
+
+        if (tokenConsumed == 0)
+        {
+            return BadRequest("This reset link is invalid or has expired. Please request a new one.");
+        }
+
+        var user = await _db.Users
+            .FirstOrDefaultAsync(account => account.UserId == token.UserId);
+
+        if (user is null)
+        {
+            return BadRequest("This reset link is invalid or has expired. Please request a new one.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.UpdatedAt = consumedAt;
+
+        await _db.PasswordResetTokens
+            .Where(resetToken =>
+                resetToken.UserId == user.UserId
+                && resetToken.PasswordResetTokenId != token.PasswordResetTokenId
+                && resetToken.UsedAt == null)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(resetToken => resetToken.UsedAt, consumedAt));
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return NoContent();
     }
 
     // ---------------------------------------------------------

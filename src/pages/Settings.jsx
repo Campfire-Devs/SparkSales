@@ -7,8 +7,6 @@ import {
   ChevronDown,
   Clock3,
   Crown,
-  Eye,
-  EyeOff,
   Mail,
   MapPin,
   Pencil,
@@ -144,8 +142,6 @@ function SettingsContent({
 
   const [saveStatus, setSaveStatus] = useState("idle");
 
-  const [deletionRequest, setDeletionRequest] = useState(null);
-
   useEffect(() => {
     if (!token) {
       return;
@@ -227,6 +223,7 @@ function SettingsContent({
 
       setAppSettings(savedSettings);
       setDraftAppSettings(savedSettings);
+      window.dispatchEvent(new Event("sparksales-settings-updated"));
 
       setSaveStatus("success");
 
@@ -478,10 +475,8 @@ function SettingsContent({
 
       <motion.div variants={sectionVariants}>
         <DangerZoneSection
-          business={business}
           account={account}
-          deletionRequest={deletionRequest}
-          setDeletionRequest={setDeletionRequest}
+          token={token}
         />
       </motion.div>
 
@@ -973,212 +968,8 @@ function AccountSecuritySection({ account }) {
           />
         </div>
 
-        <ChangePasswordForm />
       </div>
     </section>
-  );
-}
-
-/* ========================================================= */
-/* PASSWORD                                                 */
-/* ========================================================= */
-
-function ChangePasswordForm() {
-  const [form, setForm] = useState({
-    current: "",
-    next: "",
-    confirm: "",
-  });
-
-  const [status, setStatus] = useState("idle");
-
-  const [error, setError] = useState("");
-
-  const [showCurrent, setShowCurrent] = useState(false);
-
-  const [showNext, setShowNext] = useState(false);
-
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const tooShort = form.next.length > 0 && form.next.length < 6;
-
-  const mismatch = form.confirm.length > 0 && form.next !== form.confirm;
-
-  const canSubmit =
-    form.current && form.next.length >= 6 && form.next === form.confirm;
-
-  async function submit(event) {
-    event.preventDefault();
-
-    if (!canSubmit) {
-      return;
-    }
-
-    setStatus("saving");
-    setError("");
-
-    try {
-      await api.changePassword({
-        currentPassword: form.current,
-        newPassword: form.next,
-      });
-
-      setForm({
-        current: "",
-        next: "",
-        confirm: "",
-      });
-
-      setStatus("success");
-
-      window.setTimeout(() => {
-        setStatus("idle");
-      }, 3200);
-    } catch (err) {
-      setError(err?.message || "Couldn't update your password.");
-
-      setStatus("error");
-    }
-  }
-
-  return (
-    <form className="mt-6 border-t border-slate-100 pt-6" onSubmit={submit}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E6F7F3] text-[#063D35]">
-          <ShieldCheck size={17} />
-        </div>
-
-        <div>
-          <h3 className="text-sm font-extrabold text-[#063D35]">
-            Change password
-          </h3>
-
-          <p className="text-xs text-slate-400">
-            Keep your SparkSales account secure.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <PasswordField
-          label="Current password"
-          value={form.current}
-          onChange={(value) =>
-            setForm((current) => ({
-              ...current,
-              current: value,
-            }))
-          }
-          visible={showCurrent}
-          setVisible={setShowCurrent}
-        />
-
-        <PasswordField
-          label="New password"
-          value={form.next}
-          onChange={(value) =>
-            setForm((current) => ({
-              ...current,
-              next: value,
-            }))
-          }
-          visible={showNext}
-          setVisible={setShowNext}
-          placeholder="At least 6 characters"
-        />
-
-        <div className="sm:col-span-2">
-          <PasswordField
-            label="Confirm new password"
-            value={form.confirm}
-            onChange={(value) =>
-              setForm((current) => ({
-                ...current,
-                confirm: value,
-              }))
-            }
-            visible={showConfirm}
-            setVisible={setShowConfirm}
-            placeholder="Repeat password"
-          />
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {(tooShort || mismatch || error) && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: -5,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              y: -5,
-            }}
-            className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
-          >
-            {tooShort
-              ? "Password must be at least 6 characters."
-              : mismatch
-                ? "Passwords don't match."
-                : error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <motion.button
-          type="submit"
-          disabled={!canSubmit || status === "saving"}
-          whileHover={{
-            y: -1,
-          }}
-          whileTap={{
-            scale: 0.98,
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#063D35] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#052F29] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {status === "saving" ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Updating...
-            </>
-          ) : (
-            <>
-              <ShieldCheck size={15} />
-              Update password
-            </>
-          )}
-        </motion.button>
-
-        <AnimatePresence>
-          {status === "success" && (
-            <motion.span
-              initial={{
-                opacity: 0,
-                x: -8,
-              }}
-              animate={{
-                opacity: 1,
-                x: 0,
-              }}
-              exit={{
-                opacity: 0,
-                x: -8,
-              }}
-              className="inline-flex items-center gap-2 text-sm font-bold text-[#0C9A73]"
-            >
-              <Check size={15} />
-              Password updated
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </div>
-    </form>
   );
 }
 
@@ -1737,12 +1528,14 @@ function ApplicationSettingsSection({
 /* ========================================================= */
 
 function DangerZoneSection({
-  business,
   account,
-  deletionRequest,
-  setDeletionRequest,
+  token,
 }) {
   const [open, setOpen] = useState(false);
+
+  const [deletionRequest, setDeletionRequest] = useState(null);
+
+  const [loadingRequest, setLoadingRequest] = useState(true);
 
   const [reason, setReason] = useState("");
 
@@ -1752,8 +1545,44 @@ function DangerZoneSection({
 
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadDeletionRequest() {
+      try {
+        setAuthToken(token);
+        const request = await api.getDeletionRequest();
+        if (active) {
+          setDeletionRequest(request);
+        }
+      } catch (requestError) {
+        console.error("Failed to load account deletion request:", requestError);
+        if (active) {
+          setError(
+            requestError?.message ||
+              "Unable to load account deletion status.",
+          );
+        }
+      } finally {
+        if (active) {
+          setLoadingRequest(false);
+        }
+      }
+    }
+
+    void loadDeletionRequest();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
   const canRequest =
-    confirmText.trim().toLowerCase() === business.name.trim().toLowerCase();
+    confirmText.trim().toUpperCase() === "DELETE ACCOUNT";
 
   async function submitRequest() {
     if (!account?.email) {
@@ -1765,11 +1594,7 @@ function DangerZoneSection({
     setError("");
 
     try {
-      const request = await api.requestDeletion(
-        account.email,
-        business.name,
-        reason,
-      );
+      const request = await api.requestDeletion(reason);
 
       setDeletionRequest(request);
       setOpen(false);
@@ -1837,7 +1662,11 @@ function DangerZoneSection({
           </div>
         )}
 
-        {deletionRequest ? (
+        {loadingRequest ? (
+          <p className="text-sm font-medium text-slate-500">
+            Checking account deletion status...
+          </p>
+        ) : deletionRequest ? (
           <div>
             <div className="rounded-2xl border border-red-100 bg-white p-4">
               <div className="flex items-start gap-3">
@@ -1847,14 +1676,14 @@ function DangerZoneSection({
 
                 <div>
                   <p className="text-sm font-extrabold text-slate-800">
-                    Removal request submitted
+                    Account deletion request submitted
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     Requested on{" "}
                     {new Date(deletionRequest.requestedAt).toLocaleDateString()}
-                    . You'll receive confirmation once {business.name} has been
-                    permanently removed.
+                    . The SparkSales team has been notified and will contact you
+                    about your account deletion request.
                   </p>
                 </div>
               </div>
@@ -1894,12 +1723,12 @@ function DangerZoneSection({
                   <Field
                     label={
                       <>
-                        Type <strong>{business.name}</strong> to confirm
+                        Type <strong>DELETE ACCOUNT</strong> to confirm
                       </>
                     }
                     value={confirmText}
                     onChange={setConfirmText}
-                    placeholder={business.name}
+                    placeholder="DELETE ACCOUNT"
                   />
                 </div>
               </div>
@@ -1924,7 +1753,7 @@ function DangerZoneSection({
                   onClick={submitRequest}
                   className="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submitting ? "Submitting..." : "Request removal"}
+                  {submitting ? "Sending request..." : "Send deletion request"}
                 </button>
               </div>
             </motion.div>
@@ -1937,8 +1766,8 @@ function DangerZoneSection({
               </p>
 
               <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
-                Requesting removal notifies the SparkSales team to permanently
-                delete <strong>{business.name}</strong> and its associated data.
+                Send the SparkSales team a request to permanently delete your
+                account and associated business data.
               </p>
             </div>
 
@@ -2058,40 +1887,6 @@ function SelectField({ label, value, onChange, options }) {
           size={15}
           className="pointer-events-none absolute right-3 top-3 text-slate-400"
         />
-      </div>
-    </label>
-  );
-}
-
-function PasswordField({
-  label,
-  value,
-  onChange,
-  visible,
-  setVisible,
-  placeholder,
-}) {
-  return (
-    <label className="block text-sm font-bold text-slate-700">
-      {label}
-
-      <div className="relative mt-1.5">
-        <input
-          type={visible ? "text" : "password"}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-11 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#7FCFC0] focus:ring-4 focus:ring-[#7FCFC0]/10"
-        />
-
-        <button
-          type="button"
-          onClick={() => setVisible((current) => !current)}
-          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
-        >
-          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
       </div>
     </label>
   );
