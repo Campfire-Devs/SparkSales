@@ -30,7 +30,7 @@ function ForgotPassword() {
       <div className="ss-authpage-bg" aria-hidden="true" />
       <BrandLockup size={38} wordmarkSize="md" tagline />
 
-      <section className="ss-setup-card" aria-labelledby="forgot-title">
+      <section className="ss-setup-card ss-password-card" aria-labelledby="forgot-title">
         <div className="ss-setup-intro">
           <p className="ss-setup-eyebrow">SparkSales</p>
           <h1 id="forgot-title">Forgot your password?</h1>
@@ -52,14 +52,18 @@ function ForgotPassword() {
             <label className="ss-field">
               <span>Email</span>
               <input
+                id="forgot-email"
+                name="email"
                 type="email"
                 required
-                placeholder="you@business.com"
+                autoComplete="email"
+                maxLength={320}
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            {error && <p className="ss-form-error">{error}</p>}
+            {error && <p className="ss-form-error" role="alert">{error}</p>}
             <button type="submit" className="ss-btn ss-btn-primary ss-btn-block" disabled={loading}>
               {loading ? "Sending…" : "Send reset link"}
             </button>

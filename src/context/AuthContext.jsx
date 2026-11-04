@@ -15,6 +15,7 @@ import {
 } from "../api/authApi";
 
 import { setAuthToken } from "../api/client";
+import { setAuthToken as setLegacyApiAuthToken } from "../lib/apiClient";
 
 const AuthContext = createContext(null);
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
    */
   useEffect(() => {
     setAuthToken(token);
+    setLegacyApiAuthToken(token);
   }, [token]);
 
   /*
