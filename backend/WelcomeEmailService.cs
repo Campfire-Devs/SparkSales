@@ -12,7 +12,11 @@ public sealed class WelcomeEmailService
     private readonly string _senderName;
     private readonly string? _appPassword;
     private readonly string _frontendBaseUrl;
+    private readonly string _deletionRequestRecipientEmail;
     private readonly ILogger<WelcomeEmailService> _logger;
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(_senderEmail)
+        && !string.IsNullOrWhiteSpace(_appPassword);
 
     public WelcomeEmailService(IConfiguration configuration, ILogger<WelcomeEmailService> logger)
     {
@@ -20,14 +24,24 @@ public sealed class WelcomeEmailService
         _smtpPort = int.Parse(configuration["Email:SmtpPort"] ?? "587");
         _senderEmail = configuration["Email:SenderEmail"] ?? "";
         _senderName = configuration["Email:SenderName"] ?? "SparkSales";
+        var deletionRequestRecipient =
+            configuration["Email:DeletionRequestRecipient"];
+        _deletionRequestRecipientEmail =
+            string.IsNullOrWhiteSpace(deletionRequestRecipient)
+                ? _senderEmail
+                : deletionRequestRecipient.Trim();
         // Set via `dotnet user-secrets set "Email:SenderAppPassword" "..."` or the
         // Email__SenderAppPassword environment variable — never in appsettings.json.
-        _appPassword = configuration["Email:SenderAppPassword"];
+        var appPassword = configuration["Email:SenderAppPassword"];
+        _appPassword = string.IsNullOrWhiteSpace(appPassword)
+            ? null
+            : string.Concat(
+                appPassword.Where(character => !char.IsWhiteSpace(character)));
         _frontendBaseUrl = (configuration["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
         _logger = logger;
     }
 
-    public Task SendAsync(string recipientEmail, string fullName)
+    public Task SendWelcomeAsync(string recipientEmail, string fullName)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_senderName, _senderEmail));
@@ -62,11 +76,12 @@ public sealed class WelcomeEmailService
             """;
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
-        return SendAsync(message, recipientEmail);
+        return SendAsync(message, recipientEmail, throwOnFailure: true);
     }
 
-    public Task SendPasswordResetAsync(string recipientEmail, string fullName, string resetLink)
+    public Task SendPasswordResetAsync(string recipientEmail, string fullName, string token)
     {
+        var resetLink = $"{_frontendBaseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_senderName, _senderEmail));
         message.To.Add(MailboxAddress.Parse(recipientEmail));
@@ -89,7 +104,7 @@ public sealed class WelcomeEmailService
             </tr>
             <tr>
               <td style="padding:8px 40px 32px 40px">
-                <a href="{resetLink}"
+                <a href="{WebUtility.HtmlEncode(resetLink)}"
                    style="display:inline-block;background:#0E7C5A;color:#ffffff;text-decoration:none;
                           font-weight:600;font-size:15px;padding:12px 28px;border-radius:8px">
                   Reset password
@@ -100,7 +115,7 @@ public sealed class WelcomeEmailService
             """;
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
-        return SendAsync(message, recipientEmail);
+        return SendAsync(message, recipientEmail, throwOnFailure: true);
     }
 
     public Task SendDailySummaryAsync(
@@ -156,7 +171,7 @@ public sealed class WelcomeEmailService
             """;
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
-        return SendAsync(message, recipientEmail);
+        return SendAsync(message, recipientEmail, throwOnFailure: true);
     }
 
     public Task SendLossAlertAsync(string recipientEmail, string fullName, string businessName, decimal netProfit)
@@ -195,7 +210,7 @@ public sealed class WelcomeEmailService
             """;
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
-        return SendAsync(message, recipientEmail);
+        return SendAsync(message, recipientEmail, throwOnFailure: true);
     }
 
     private static string FormatCurrency(decimal value) => $"R {value.ToString("N2", CultureInfo.InvariantCulture)}";
@@ -236,6 +251,54 @@ public sealed class WelcomeEmailService
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
         return SendAsync(message, recipientEmail);
+    }
+
+    public Task SendAccountDeletionRequestAsync(
+        string requesterEmail,
+        string fullName,
+        string businessName,
+        string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(_deletionRequestRecipientEmail))
+        {
+            throw new InvalidOperationException(
+                "The account deletion notification recipient is not configured."
+            );
+        }
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_senderName, _senderEmail));
+        message.To.Add(MailboxAddress.Parse(_deletionRequestRecipientEmail));
+        message.Subject = $"Account deletion requested — {requesterEmail}";
+
+        var reasonRow = string.IsNullOrWhiteSpace(reason)
+            ? ""
+            : $"""
+                <p style="margin:12px 0 0 0;color:#3F5B54">
+                  <strong>Reason:</strong> {WebUtility.HtmlEncode(reason)}
+                </p>
+                """;
+
+        var body = $"""
+            <tr>
+              <td style="padding:36px 40px 8px 40px">
+                <h1 style="margin:0 0 4px 0;font-size:22px;color:#063D35">Account deletion request</h1>
+                <p style="margin:0;font-size:15px;color:#3F5B54">A user has requested deletion of their SparkSales account.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 40px 32px 40px;font-size:15px;color:#204A41;line-height:1.65">
+                <p style="margin:0"><strong>Name:</strong> {WebUtility.HtmlEncode(fullName)}</p>
+                <p style="margin:8px 0 0 0"><strong>Email:</strong> {WebUtility.HtmlEncode(requesterEmail)}</p>
+                <p style="margin:8px 0 0 0"><strong>Business:</strong> {WebUtility.HtmlEncode(businessName)}</p>
+                {reasonRow}
+              </td>
+            </tr>
+            {SignOffRow}
+            """;
+
+        message.Body = new TextPart("html") { Text = WrapInLayout(body) };
+        return SendAsync(message, _deletionRequestRecipientEmail, throwOnFailure: true);
     }
 
     private static string SignOffRow => """
@@ -289,11 +352,21 @@ public sealed class WelcomeEmailService
         </html>
         """;
 
-    private async Task SendAsync(MimeMessage message, string recipientEmail)
+    private async Task SendAsync(
+        MimeMessage message,
+        string recipientEmail,
+        bool throwOnFailure = false)
     {
         if (string.IsNullOrWhiteSpace(_senderEmail) || string.IsNullOrWhiteSpace(_appPassword))
         {
             _logger.LogWarning("Email not sent to {Email} — Email:SenderEmail / Email:SenderAppPassword aren't configured.", recipientEmail);
+            if (throwOnFailure)
+            {
+                throw new InvalidOperationException(
+                    "Email delivery is not configured. Please contact the SparkSales team."
+                );
+            }
+
             return;
         }
 
@@ -309,6 +382,13 @@ public sealed class WelcomeEmailService
         catch (Exception exception)
         {
             _logger.LogError(exception, "Email failed for {Email}", recipientEmail);
+            if (throwOnFailure)
+            {
+                throw new InvalidOperationException(
+                    "Email delivery failed. Please try again later.",
+                    exception
+                );
+            }
         }
     }
 }

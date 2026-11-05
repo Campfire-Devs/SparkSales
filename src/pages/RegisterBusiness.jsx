@@ -3,7 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 
 import { useSparkSales } from "../context/SparkSalesContext";
 import { useAuth } from "../context/AuthContext";
-import { createBusiness } from "../api/businessApi";
 
 import { BrandLockup } from "../components/Brand";
 
@@ -39,7 +38,7 @@ function loadDraft() {
 
 function RegisterBusiness() {
   const { setBusiness } = useSparkSales();
-  const { token, account } = useAuth();
+  const { token } = useAuth();
   const nav = useNavigate();
 
   const [f, setF] = useState(loadDraft);
@@ -80,24 +79,13 @@ function RegisterBusiness() {
     try {
       setSaving(true);
 
-      const business = await createBusiness({
+      await setBusiness({
         name: f.name.trim(),
         category: f.category,
         contact: f.contact.trim(),
         location: f.location.trim(),
         stallNumber: f.stallNumber.trim(),
         startingCapital: Number(f.startingCapital) || 0,
-      });
-
-      /*
-       * Temporary compatibility step:
-       * keep the returned business available to the existing
-       * SparkSales context while we finish removing localStorage
-       * from the financial system.
-       */
-      setBusiness({
-        ...business,
-        owner: f.owner || account?.fullName || "Business Owner",
       });
 
       sessionStorage.removeItem(DRAFT_KEY);

@@ -22,6 +22,8 @@ public class User
 
     public DateTime? LastLoginAt { get; set; }
 
+    public DateTime? WelcomeEmailSentAt { get; set; }
+
     public ICollection<Business> OwnedBusinesses { get; set; } = new List<Business>();
 
     public ICollection<BusinessMember> BusinessMemberships { get; set; } =

@@ -13,7 +13,8 @@ function ResetPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const passwordTooShort = password.length > 0 && password.length < 6;
+  const passwordInvalid = password.length > 0
+    && (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password));
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   async function handleSubmit(e) {
@@ -23,7 +24,7 @@ function ResetPassword() {
       setError("This reset link is missing its token. Please request a new one.");
       return;
     }
-    if (password.length < 6 || password !== confirmPassword) return;
+    if (passwordInvalid || password !== confirmPassword) return;
 
     setLoading(true);
     try {
@@ -41,7 +42,7 @@ function ResetPassword() {
       <div className="ss-authpage-bg" aria-hidden="true" />
       <BrandLockup size={38} wordmarkSize="md" tagline />
 
-      <section className="ss-setup-card" aria-labelledby="reset-title">
+      <section className="ss-setup-card ss-password-card" aria-labelledby="reset-title">
         <div className="ss-setup-intro">
           <p className="ss-setup-eyebrow">SparkSales</p>
           <h1 id="reset-title">Choose a new password</h1>
@@ -65,6 +66,7 @@ function ResetPassword() {
               <input
                 type="password"
                 required
+                minLength={8}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -75,12 +77,17 @@ function ResetPassword() {
               <input
                 type="password"
                 required
+                minLength={8}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </label>
-            {passwordTooShort && <p className="ss-form-error">Password must be at least 6 characters.</p>}
+            {passwordInvalid && (
+              <p className="ss-form-error">
+                Password must be at least 8 characters and contain at least one letter and one number.
+              </p>
+            )}
             {passwordsMismatch && <p className="ss-form-error">Passwords don't match.</p>}
             {error && <p className="ss-form-error">{error}</p>}
             <button type="submit" className="ss-btn ss-btn-primary ss-btn-block" disabled={loading}>

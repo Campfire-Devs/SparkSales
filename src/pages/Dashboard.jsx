@@ -1908,5 +1908,5 @@ function Field({
     </label>
   );
 }
-
+//The dashboard page is the main page of the application, where users can see an overview of their business performance, including insights, analytics, recent transactions, and quick actions. It uses various components and libraries to display data in a visually appealing way.
 export default Dashboard;

@@ -16,6 +16,28 @@ $env:OAuth__Apple__ClientId = "your-apple-services-id"
 dotnet run --launch-profile https
 ```
 
+## Local API configuration
+
+The Vite development server proxies `/api` requests to `https://localhost:5001`.
+Start the API as well as the frontend. The API requires a PostgreSQL connection
+string and JWT signing key before it can start. `.env.example` is a reference,
+and `backend/.env` is ignored by Git, but ASP.NET Core does not load dotenv files
+automatically.
+
+For the API to use these settings, set the connection string and a private JWT
+signing key using .NET user-secrets from the `backend` directory, or export them
+as process environment variables. Then start the API:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<your-postgresql-connection-string>"
+dotnet user-secrets set "Jwt:Key" "<your-private-jwt-signing-key>"
+dotnet run --launch-profile https
+```
+
+Keep the PostgreSQL connection string, JWT key, and email credentials private.
+If any real credentials were committed to Git, rotate them; replacing the
+current file does not remove credentials from earlier Git history.
+
 ## Google setup
 
 1. Open Google Cloud Console and create or select a project.
@@ -54,28 +76,59 @@ token issuance before production sign-in is complete.
 
 ## Welcome email setup
 
-Registration sends a welcome email from `sparksales.team01@gmail.com` when the
-Gmail SMTP credentials are configured. Create a Google app password for that
-account, then set it only in the terminal running the API:
+Welcome emails are sent after registration; if delivery fails, the account is
+still created and delivery is retried at the user's next sign-in. Successful
+delivery is recorded so the welcome email is not sent again. Password reset
+emails use the same SMTP configuration and report delivery failures to the
+requesting user.
+
+For Gmail, enable 2-Step Verification and create an **app password** for the
+sender account (a normal Gmail password will not work). Configure the sender
+address and app password using user-secrets from the `backend` directory:
 
 ```powershell
-$env:Email__SenderAppPassword = "your-16-character-app-password"
-dotnet run --launch-profile https
+dotnet user-secrets set "Email:SenderEmail" "your-sender@gmail.com"
+dotnet user-secrets set "Email:SenderAppPassword" "your-16-character-app-password"
 ```
 
-The email is sent only after the address passes validation. If SMTP is not
-configured or delivery fails, registration still succeeds and the API logs the
-email failure. The app password must never be committed to the repository.
+You can paste the app password in its grouped format; the API removes formatting
+whitespace before authenticating with SMTP.
+
+The default SMTP host and port are `smtp.gmail.com` and `587`. For deployment,
+set `Email__SenderEmail` and `Email__SenderAppPassword` as backend environment
+variables or through your hosting provider's secret store. Never commit the app
+password to the repository. If delivery cannot be completed, the backend logs
+the failure; check those logs and SMTP configuration.
+
+After deploying this change, apply the database migration from the `backend`
+directory:
+
+```powershell
+dotnet ef database update
+```
+
+Account deletion requests send a notification to
+`Email:DeletionRequestRecipient`. If it is unset, the notification is sent to
+`Email:SenderEmail`. Configure an alternate recipient through user-secrets if
+needed:
+
+```powershell
+dotnet user-secrets set "Email:DeletionRequestRecipient" "<your-support-email>"
+```
+
+Deletion requests require SMTP delivery to succeed; the Settings page will show
+an error if the notification cannot be sent.
+
+Password reset links are valid for 30 minutes. Set `Frontend__BaseUrl` to the
+deployed frontend origin so links in reset emails open the correct site; the
+default is `http://localhost:5173` for local development.
 
 **Note:** a previous app password for this account was committed to this repo
 in `appsettings.json`. It's been removed and should be treated as compromised
 — rotate/revoke it in the Google account's security settings and generate a
 new one before setting `Email__SenderAppPassword` again.
 
-## Note on account storage
+## Account storage
 
-Accounts and deletion requests are currently kept in memory (a
-`ConcurrentDictionary`) — they reset every time the API restarts. That's
-expected for now; a teammate is wiring up persistent storage (Neon/Postgres)
-separately. This is fine for testing the frontend pages end-to-end in one
-running session.
+Accounts, application settings, and deletion requests are stored in the
+PostgreSQL database configured by `ConnectionStrings:DefaultConnection`.
