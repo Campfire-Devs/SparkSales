@@ -32,12 +32,16 @@ public sealed class WelcomeEmailService
                 : deletionRequestRecipient.Trim();
         // Set via `dotnet user-secrets set "Email:SenderAppPassword" "..."` or the
         // Email__SenderAppPassword environment variable — never in appsettings.json.
-        _appPassword = configuration["Email:SenderAppPassword"];
+        var appPassword = configuration["Email:SenderAppPassword"];
+        _appPassword = string.IsNullOrWhiteSpace(appPassword)
+            ? null
+            : string.Concat(
+                appPassword.Where(character => !char.IsWhiteSpace(character)));
         _frontendBaseUrl = (configuration["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
         _logger = logger;
     }
 
-    public Task SendAsync(string recipientEmail, string fullName)
+    public Task SendWelcomeAsync(string recipientEmail, string fullName)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_senderName, _senderEmail));
@@ -72,7 +76,7 @@ public sealed class WelcomeEmailService
             """;
 
         message.Body = new TextPart("html") { Text = WrapInLayout(body) };
-        return SendAsync(message, recipientEmail);
+        return SendAsync(message, recipientEmail, throwOnFailure: true);
     }
 
     public Task SendPasswordResetAsync(string recipientEmail, string fullName, string token)

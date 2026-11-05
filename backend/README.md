@@ -76,19 +76,36 @@ token issuance before production sign-in is complete.
 
 ## Welcome email setup
 
-Registration and password reset emails are sent from
-`sparksales.team01@gmail.com` when the Gmail SMTP credentials are configured.
-Create a Google app password for that account, then set it only in the terminal
-running the API:
+Welcome emails are sent after registration; if delivery fails, the account is
+still created and delivery is retried at the user's next sign-in. Successful
+delivery is recorded so the welcome email is not sent again. Password reset
+emails use the same SMTP configuration and report delivery failures to the
+requesting user.
+
+For Gmail, enable 2-Step Verification and create an **app password** for the
+sender account (a normal Gmail password will not work). Configure the sender
+address and app password using user-secrets from the `backend` directory:
 
 ```powershell
-$env:Email__SenderAppPassword = "your-16-character-app-password"
-dotnet run --launch-profile https
+dotnet user-secrets set "Email:SenderEmail" "your-sender@gmail.com"
+dotnet user-secrets set "Email:SenderAppPassword" "your-16-character-app-password"
 ```
 
-The email is sent only after the address passes validation. If SMTP is not
-configured or delivery fails, registration still succeeds and the API logs the
-email failure. The app password must never be committed to the repository.
+You can paste the app password in its grouped format; the API removes formatting
+whitespace before authenticating with SMTP.
+
+The default SMTP host and port are `smtp.gmail.com` and `587`. For deployment,
+set `Email__SenderEmail` and `Email__SenderAppPassword` as backend environment
+variables or through your hosting provider's secret store. Never commit the app
+password to the repository. If delivery cannot be completed, the backend logs
+the failure; check those logs and SMTP configuration.
+
+After deploying this change, apply the database migration from the `backend`
+directory:
+
+```powershell
+dotnet ef database update
+```
 
 Account deletion requests send a notification to
 `Email:DeletionRequestRecipient`. If it is unset, the notification is sent to

@@ -89,6 +89,9 @@ public class SparkSalesDbContext : DbContext
 
             entity.Property(x => x.LastLoginAt)
                 .HasColumnName("last_login_at");
+
+            entity.Property(x => x.WelcomeEmailSentAt)
+                .HasColumnName("welcome_email_sent_at");
         });
 
         // ---------------------------------------------------------

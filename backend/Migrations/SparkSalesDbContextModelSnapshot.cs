@@ -477,6 +477,10 @@ namespace SparkSalesApi.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<DateTime?>("WelcomeEmailSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("welcome_email_sent_at");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
