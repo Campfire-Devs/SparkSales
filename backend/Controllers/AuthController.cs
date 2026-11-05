@@ -18,15 +18,18 @@ public class AuthController : ControllerBase
     private readonly SparkSalesDbContext _db;
     private readonly JwtService _jwt;
     private readonly WelcomeEmailService _email;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         SparkSalesDbContext db,
         JwtService jwt,
-        WelcomeEmailService email)
+        WelcomeEmailService email,
+        ILogger<AuthController> logger)
     {
         _db = db;
         _jwt = jwt;
         _email = email;
+        _logger = logger;
     }
 
     // ---------------------------------------------------------
@@ -103,6 +106,8 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
+
+        await TrySendWelcomeEmailAsync(user);
 
         var token = _jwt.GenerateToken(user);
 
@@ -286,19 +291,12 @@ public class AuthController : ControllerBase
         }
 
         
-        // Determine whether this is the user's first successful login.
-        var isFirstLogin = user.LastLoginAt is null;
-
         user.LastLoginAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
 
-        // Send the welcome email only once, on first successful login.
-        if (isFirstLogin)
-        {
-            await _email.SendAsync(user.Email, user.FullName);
-        }
+        await TrySendWelcomeEmailAsync(user);
 
         var token = _jwt.GenerateToken(user);
 
@@ -386,6 +384,28 @@ public class AuthController : ControllerBase
             user.Email,
             user.EmailVerified
         );
+    }
+
+    private async Task TrySendWelcomeEmailAsync(User user)
+    {
+        if (user.WelcomeEmailSentAt is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _email.SendWelcomeAsync(user.Email, user.FullName);
+            user.WelcomeEmailSentAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Welcome email could not be sent to {Email}; it will be retried on next sign-in.",
+                user.Email);
+        }
     }
 
     private static bool IsValidEmail(string email)
